@@ -191,11 +191,14 @@ app.delete('/api/users/:username', authorize(['admin']), async (req, res) => {
 });
 
 // API to add a payment
-app.post('/api/payments', authorize(['accountant']), async (req, res) => {
+app.post('/api/payments', authorize(['accountant', 'admin']), async (req, res) => {
     try {
         const { username, amount, paymentDate, paymentMethod } = req.body;
         const userData = await readUserData(username);
         if (userData) {
+            if (!userData.payments) {
+                userData.payments = [];
+            }
             userData.payments.push({ amount, paymentDate, paymentMethod });
             const success = await writeUserData(userData);
             if (success) {
