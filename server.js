@@ -259,7 +259,7 @@ app.post('/api/notifications', authorize(['accountant']), async (req, res) => {
 });
 
 // API to mark a notification as read
-app.put('/api/notifications/:username/:index', async (req, res) => {
+app.put('/api/notifications/:username/:index', authorize(['admin', 'accountant', 'user']), async (req, res) => {
     try {
         const requestedUsername = req.params.username;
         const index = parseInt(req.params.index);
@@ -292,9 +292,15 @@ app.put('/api/notifications/:username/:index', async (req, res) => {
 });
 
 // API to get all payments (for admin/accountant dashboard)
-app.get('/api/all-payments', authorize(['admin', 'accountant']), async (req, res) => {
+app.get('/api/all-payments', authorize(['admin', 'accountant', 'user']), async (req, res) => {
     try {
-        const payments = await getAllPayments();
+        const { username, role } = req.loggedInUser;
+        let payments;
+        if (role === 'admin' || role === 'accountant') {
+            payments = await getAllPayments();
+        } else {
+            payments = await paymentsCollection.find({ username: username }).toArray();
+        }
         res.json(payments);
     } catch (error) {
         res.status(500).send('Error fetching all payments');
