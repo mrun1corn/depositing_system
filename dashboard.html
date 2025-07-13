@@ -40,6 +40,45 @@
     <script src="dashboard.js"></script>
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+    <!-- Edit Payment Modal -->
+    <div class="modal fade" id="editPaymentModal" tabindex="-1" aria-labelledby="editPaymentModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editPaymentModalLabel">Edit Payment</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="edit-payment-form">
+                        <input type="hidden" id="edit-payment-id">
+                        <div class="form-group">
+                            <label for="edit-username">Username</label>
+                            <input type="text" class="form-control" id="edit-username" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-amount">Amount</label>
+                            <input type="number" class="form-control" id="edit-amount" step="0.01" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-paymentDate">Payment Date</label>
+                            <input type="date" class="form-control" id="edit-paymentDate" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-paymentMethod">Payment Method</label>
+                            <input type="text" class="form-control" id="edit-paymentMethod" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Save Changes</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="dashboard.js"></script>
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 </body>
 </html>

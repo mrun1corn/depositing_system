@@ -2,7 +2,7 @@ const express = require('express');
 
 const cors = require('cors');
 
-const { MongoClient } = require('mongodb');
+const { MongoClient, ObjectId } = require('mongodb');
 
 const mongoURI = "mongodb+srv://robin:robin01716@deposit.udyoebh.mongodb.net/?retryWrites=true&w=majority&appName=deposit";
 const client = new MongoClient(mongoURI);
@@ -127,10 +127,6 @@ app.get('/api/users/:username', async (req, res) => {
         const userData = await readUserData(username);
 
         if (userData) {
-            // Fetch payments for this user
-            const userPayments = await paymentsCollection.find({ username: username }).toArray();
-            userData.payments = userPayments;
-
             // Fetch notifications for this user
             const userNotifications = await notificationsCollection.find({ username: username }).toArray();
             userData.notifications = userNotifications;
@@ -162,7 +158,7 @@ app.post('/api/users', authorize(['admin']), async (req, res) => {
             userToUpdate.role = role;
         } else {
             // Create new user
-            userToUpdate = { username, password, role, payments: [], notifications: [] };
+            userToUpdate = { username, password, role, notifications: [] }; // Removed payments array
         }
         const success = await writeUserData(userToUpdate);
         if (success) {
@@ -194,29 +190,52 @@ app.delete('/api/users/:username', authorize(['admin']), async (req, res) => {
 app.post('/api/payments', authorize(['accountant', 'admin']), async (req, res) => {
     try {
         const { username, amount, paymentDate, paymentMethod } = req.body;
-        const userData = await readUserData(username);
-        if (userData) {
-            if (!userData.payments) {
-                userData.payments = [];
-            }
-            userData.payments.push({ amount, paymentDate, paymentMethod });
-            const success = await writeUserData(userData);
-            if (success) {
-                // Also insert into a separate payments collection for easier querying of all payments
-                await paymentsCollection.insertOne({ username, amount: parseFloat(amount), paymentDate, paymentMethod, timestamp: new Date() });
-                res.status(200).send('Payment added successfully');
-            } else {
-                res.status(500).send('Failed to add payment');
-            }
-        } else {
-            res.status(404).send('User not found');
-        }
+        // Only insert into the separate payments collection
+        await paymentsCollection.insertOne({ username, amount: parseFloat(amount), paymentDate, paymentMethod, timestamp: new Date() });
+        res.status(200).send('Payment added successfully');
     } catch (error) {
+        console.error("Error adding payment:", error);
         res.status(500).send('Error adding payment');
     }
 });
 
 // API to add a notification
+// API to update a payment
+app.put('/api/payments/:id', authorize(['admin', 'accountant']), async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { username, amount, paymentDate, paymentMethod } = req.body;
+        const result = await paymentsCollection.updateOne(
+            { _id: new ObjectId(id) },
+            { $set: { username, amount: parseFloat(amount), paymentDate, paymentMethod } }
+        );
+        if (result.matchedCount > 0) {
+            res.status(200).send('Payment updated successfully');
+        } else {
+            res.status(404).send('Payment not found');
+        }
+    } catch (error) {
+        console.error("Error updating payment:", error);
+        res.status(500).send('Error updating payment');
+    }
+});
+
+// API to delete a payment
+app.delete('/api/payments/:id', authorize(['admin', 'accountant']), async (req, res) => {
+    try {
+        const { id } = req.params;
+        const result = await paymentsCollection.deleteOne({ _id: new ObjectId(id) });
+        if (result.deletedCount > 0) {
+            res.status(200).send('Payment deleted successfully');
+        } else {
+            res.status(404).send('Payment not found');
+        }
+    } catch (error) {
+        console.error("Error deleting payment:", error);
+        res.status(500).send('Error deleting payment');
+    }
+});
+
 app.post('/api/notifications', authorize(['accountant']), async (req, res) => {
     try {
         const { username, message } = req.body;

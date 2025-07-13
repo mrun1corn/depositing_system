@@ -165,6 +165,63 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
+    const setupPaymentEventListeners = () => {
+        document.querySelectorAll('.edit-payment-btn').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const id = e.target.dataset.id;
+                const username = e.target.dataset.username;
+                const amount = e.target.dataset.amount;
+                const date = e.target.dataset.date;
+                const method = e.target.dataset.method;
+
+                document.getElementById('edit-payment-id').value = id;
+                document.getElementById('edit-username').value = username;
+                document.getElementById('edit-amount').value = amount;
+                document.getElementById('edit-paymentDate').value = date;
+                document.getElementById('edit-paymentMethod').value = method;
+            });
+        });
+
+        document.querySelectorAll('.delete-payment-btn').forEach(button => {
+            button.addEventListener('click', async (e) => {
+                const id = e.target.dataset.id;
+                if (confirm('Are you sure you want to delete this payment?')) {
+                    const result = await deleteData(`payments/${id}`);
+                    if (result !== 'Access Denied') {
+                        alert('Payment deleted successfully!');
+                        // Re-render the appropriate dashboard based on the user's role
+                        if (loggedInUser.role === 'admin') {
+                            renderAdminDashboard();
+                        } else if (loggedInUser.role === 'accountant') {
+                            renderAccountantDashboard();
+                        }
+                    }
+                }
+            });
+        });
+
+        document.getElementById('edit-payment-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('edit-payment-id').value;
+            const username = document.getElementById('edit-username').value;
+            const amount = document.getElementById('edit-amount').value;
+            const paymentDate = document.getElementById('edit-paymentDate').value;
+            const paymentMethod = document.getElementById('edit-paymentMethod').value;
+
+            const result = await putData(`payments/${id}`, { username, amount, paymentDate, paymentMethod });
+            if (result !== 'Access Denied') {
+                alert('Payment updated successfully!');
+                $('#editPaymentModal').modal('hide'); // Hide the modal
+                // Re-render the appropriate dashboard based on the user's role
+                if (loggedInUser.role === 'admin') {
+                    renderAdminDashboard();
+                } else if (loggedInUser.role === 'accountant') {
+                    renderAccountantDashboard();
+                }
+            }
+        });
+    };
+
     // Admin Dashboard (Overview)
     const renderAdminDashboard = async () => {
         const users = await fetchData('users');
@@ -257,6 +314,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                     <th>Amount</th>
                                     <th>Payment Date</th>
                                     <th>Payment Method</th>
+                                    <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="all-payments-list-admin">
@@ -285,6 +343,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td>${payment.amount}</td>
                 <td>${payment.paymentDate}</td>
                 <td>${payment.paymentMethod}</td>
+                <td>
+                    <button class="btn btn-sm btn-info edit-payment-btn" data-id="${payment._id}" data-username="${payment.username}" data-amount="${payment.amount}" data-date="${payment.paymentDate}" data-method="${payment.paymentMethod}" data-toggle="modal" data-target="#editPaymentModal"><i class="fas fa-edit"></i></button>
+                    <button class="btn btn-sm btn-danger delete-payment-btn" data-id="${payment._id}"><i class="fas fa-trash-alt"></i></button>
+                </td>
             `;
             allPaymentsListAdmin.appendChild(tr);
         });
@@ -339,8 +401,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Function to render detailed payment history for a selected user
     const renderUserPaymentDetails = async (username) => {
-        const userData = await fetchData(`users/${username}`);
-        const userPayments = userData.payments || [];
+        const allPayments = await fetchData('all-payments');
+        const userPayments = allPayments.filter(p => p.username === username);
         let total = 0;
         userPayments.forEach(p => total += parseFloat(p.amount));
 
@@ -375,6 +437,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                     <th>Amount</th>
                                     <th>Payment Date</th>
                                     <th>Payment Method</th>
+                                    <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="user-payment-list">
@@ -394,9 +457,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     <td>${payment.amount}</td>
                     <td>${payment.paymentDate}</td>
                     <td>${payment.paymentMethod}</td>
+                    <td>
+                        <button class="btn btn-sm btn-info edit-payment-btn" data-id="${payment._id}" data-username="${payment.username}" data-amount="${payment.amount}" data-date="${payment.paymentDate}" data-method="${payment.paymentMethod}" data-toggle="modal" data-target="#editPaymentModal"><i class="fas fa-edit"></i></button>
+                        <button class="btn btn-sm btn-danger delete-payment-btn" data-id="${payment._id}"><i class="fas fa-trash-alt"></i></button>
+                    </td>
                 `;
                 userPaymentList.appendChild(tr);
             });
+            setupPaymentEventListeners();
         };
 
         renderPaymentsTable(userPayments);
@@ -677,9 +745,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td>${payment.amount}</td>
                 <td>${payment.paymentDate}</td>
                 <td>${payment.paymentMethod}</td>
+                <td>
+                    <button class="btn btn-sm btn-info edit-payment-btn" data-id="${payment._id}" data-username="${payment.username}" data-amount="${payment.amount}" data-date="${payment.paymentDate}" data-method="${payment.paymentMethod}" data-toggle="modal" data-target="#editPaymentModal"><i class="fas fa-edit"></i></button>
+                    <button class="btn btn-sm btn-danger delete-payment-btn" data-id="${payment._id}"><i class="fas fa-trash-alt"></i></button>
+                </td>
             `;
             allPaymentsList.appendChild(tr);
         });
+
+        setupPaymentEventListeners();
 
         document.getElementById('download-all-payments-excel').addEventListener('click', () => {
             const monthlySummary = {};
@@ -814,8 +888,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // User Dashboard (Overview)
     const renderUserDashboard = async () => {
+        const allPayments = await fetchData('all-payments');
+        const userPayments = allPayments.filter(p => p.username === loggedInUser.username);
         const userData = await fetchData(`users/${loggedInUser.username}`);
-        const userPayments = userData.payments || [];
         let total = 0;
         userPayments.forEach(p => total += parseFloat(p.amount));
 
@@ -863,6 +938,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                     <th>Amount</th>
                                     <th>Payment Date</th>
                                     <th>Payment Method</th>
+                                    <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="user-payment-list">
@@ -882,9 +958,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     <td>${payment.amount}</td>
                     <td>${payment.paymentDate}</td>
                     <td>${payment.paymentMethod}</td>
+                    <td>
+                        <button class="btn btn-sm btn-info edit-payment-btn" data-id="${payment._id}" data-username="${payment.username}" data-amount="${payment.amount}" data-date="${payment.paymentDate}" data-method="${payment.paymentMethod}" data-toggle="modal" data-target="#editPaymentModal"><i class="fas fa-edit"></i></button>
+                        <button class="btn btn-sm btn-danger delete-payment-btn" data-id="${payment._id}"><i class="fas fa-trash-alt"></i></button>
+                    </td>
                 `;
                 userPaymentList.appendChild(tr);
             });
+            setupPaymentEventListeners();
         };
 
         renderUserPaymentsTable(userPayments);
