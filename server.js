@@ -125,7 +125,16 @@ app.get('/api/users/:username', async (req, res) => {
     try {
         const username = req.params.username;
         const userData = await readUserData(username);
+
         if (userData) {
+            // Fetch payments for this user
+            const userPayments = await paymentsCollection.find({ username: username }).toArray();
+            userData.payments = userPayments;
+
+            // Fetch notifications for this user
+            const userNotifications = await notificationsCollection.find({ username: username }).toArray();
+            userData.notifications = userNotifications;
+
             res.json(userData);
         } else {
             res.status(404).send('User not found');
