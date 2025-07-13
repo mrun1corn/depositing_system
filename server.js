@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 
 const { MongoClient, ObjectId } = require('mongodb');
+const { body, validationResult } = require('express-validator');
 
 const mongoURI = "mongodb+srv://robin:robin01716@deposit.udyoebh.mongodb.net/?retryWrites=true&w=majority&appName=deposit";
 const client = new MongoClient(mongoURI);
@@ -127,21 +128,26 @@ app.get('/api/users/:username', async (req, res) => {
         const userData = await readUserData(username);
 
         if (userData) {
-            // Fetch notifications for this user
-            const userNotifications = await notificationsCollection.find({ username: username }).toArray();
-            userData.notifications = userNotifications;
-
             res.json(userData);
         } else {
             res.status(404).send('User not found');
         }
-    } catch (error) {
-        res.status(500).send('Error fetching user data');
-    }
 });
 
 // API to create/update a user
-app.post('/api/users', authorize(['admin']), async (req, res) => {
+app.post(
+    '/api/users',
+    authorize(['admin']),
+    [
+        body('username').notEmpty().withMessage('Username is required'),
+        body('password').notEmpty().withMessage('Password is required'),
+        body('role').isIn(['admin', 'accountant', 'user']).withMessage('Invalid role')
+    ],
+    async (req, res) => {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
     try {
         const { username, password, role, originalUsername } = req.body;
 
@@ -158,7 +164,7 @@ app.post('/api/users', authorize(['admin']), async (req, res) => {
             userToUpdate.role = role;
         } else {
             // Create new user
-            userToUpdate = { username, password, role, notifications: [] }; // Removed payments array
+            userToUpdate = { username, password, role };
         }
         const success = await writeUserData(userToUpdate);
         if (success) {
@@ -239,54 +245,43 @@ app.delete('/api/payments/:id', authorize(['admin', 'accountant']), async (req, 
 app.post('/api/notifications', authorize(['accountant']), async (req, res) => {
     try {
         const { username, message } = req.body;
-        const userData = await readUserData(username);
-        if (userData) {
-            userData.notifications.push({ message, read: false });
-            const success = await writeUserData(userData);
-            if (success) {
-                // Also insert into a separate notifications collection for easier querying of all notifications
-                await notificationsCollection.insertOne({ username, message, read: false, timestamp: new Date() });
-                res.status(200).send('Notification sent successfully');
-            } else {
-                res.status(500).send('Failed to send notification');
-            }
-        } else {
-            res.status(404).send('User not found');
-        }
+        // Only insert into a separate notifications collection for easier querying of all notifications
+        await notificationsCollection.insertOne({ username, message, read: false, timestamp: new Date() });
+        res.status(200).send('Notification sent successfully');
     } catch (error) {
+        console.error("Error sending notification:", error);
         res.status(500).send('Error sending notification');
     }
 });
 
 // API to mark a notification as read
-app.put('/api/notifications/:username/:index', authorize(['admin', 'accountant', 'user']), async (req, res) => {
+app.put('/api/notifications/:id', authorize(['admin', 'accountant', 'user']), async (req, res) => {
     try {
-        const requestedUsername = req.params.username;
-        const index = parseInt(req.params.index);
+        const { id } = req.params;
         const { username: loggedInUsername, role: loggedInUserRole } = req.loggedInUser;
 
-        if (loggedInUserRole === 'admin' || requestedUsername === loggedInUsername) {
-            const userData = await readUserData(requestedUsername);
-            if (userData && userData.notifications && userData.notifications[index]) {
-                userData.notifications[index].read = true;
-                const success = await writeUserData(userData);
-                if (success) {
-                    // Update notification in separate collection as well
-                    await notificationsCollection.updateOne(
-                        { username: requestedUsername, "notifications.message": userData.notifications[index].message },
-                        { $set: { "notifications.$.read": true } }
-                    );
-                    res.status(200).send('Notification marked as read');
-                } else {
-                    res.status(500).send('Failed to mark notification as read');
-                }
+        const notification = await notificationsCollection.findOne({ _id: new ObjectId(id) });
+
+        if (!notification) {
+            return res.status(404).send('Notification not found');
+        }
+
+        if (loggedInUserRole === 'admin' || notification.username === loggedInUsername) {
+            const result = await notificationsCollection.updateOne(
+                { _id: new ObjectId(id) },
+                { $set: { read: true } }
+            );
+
+            if (result.matchedCount > 0) {
+                res.status(200).send('Notification marked as read');
             } else {
-                res.status(404).send('Notification not found');
+                res.status(500).send('Failed to mark notification as read');
             }
         } else {
             res.status(403).send('Access Denied: You can only mark your own notifications as read.');
         }
     } catch (error) {
+        console.error("Error marking notification as read:", error);
         res.status(500).send('Error marking notification as read');
     }
 });

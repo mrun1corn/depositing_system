@@ -869,9 +869,16 @@ document.addEventListener('DOMContentLoaded', () => {
             const paymentDate = document.getElementById('payment-date').value;
             const paymentMethod = document.getElementById('payment-method').value;
 
-            await postData('payments', { username, amount, paymentDate, paymentMethod });
-            alert('Payment added!');
-            e.target.reset();
+            const result = await postData('payments', { username, amount, paymentDate, paymentMethod });
+            if (result !== 'Access Denied') {
+                alert('Payment added!');
+                e.target.reset();
+                if (loggedInUser.role === 'admin') {
+                    renderAdminDashboard();
+                } else if (loggedInUser.role === 'accountant') {
+                    renderAccountantDashboard();
+                }
+            }
         });
 
         document.getElementById('notification-form').addEventListener('submit', async (e) => {
@@ -984,23 +991,24 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         const notificationsDiv = document.getElementById('notifications');
-        const userNotifications = userData.notifications || [];
+        const allNotifications = await fetchData('all-notifications');
+        const userNotifications = allNotifications.filter(n => n.username === loggedInUser.username);
         notificationsDiv.innerHTML = '';
-        userNotifications.filter(n => !n.read).forEach((notification, index) => {
+        userNotifications.filter(n => !n.read).forEach(notification => {
             const notificationElement = document.createElement('div');
             notificationElement.className = 'notification-item';
             notificationElement.innerHTML = `
                 <p class="font-bold">Notification</p>
                 <p>${notification.message}</p>
-                <button class="btn btn-link" data-index="${index}">Mark as read</button>
+                <button class="btn btn-link" data-id="${notification._id}">Mark as read</button>
             `;
             notificationsDiv.appendChild(notificationElement);
         });
 
         notificationsDiv.addEventListener('click', async (e) => {
-            if (e.target.tagName === 'BUTTON' && e.target.dataset.index) {
-                const index = parseInt(e.target.dataset.index);
-                await putData(`notifications/${loggedInUser.username}/${index}`);
+            if (e.target.tagName === 'BUTTON' && e.target.dataset.id) {
+                const id = e.target.dataset.id;
+                await putData(`notifications/${id}`);
                 renderUserDashboard();
             }
         });
