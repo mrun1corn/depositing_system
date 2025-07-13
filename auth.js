@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
         loginButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Signing In...';
 
         try {
-            const response = await fetch(`http://0.0.0.0:3000/api/users/${username}`);
+            const response = await fetch(`/api/users/${username}`);
             if (!response.ok) {
                 errorMessage.textContent = 'Invalid username or password';
                 return;
