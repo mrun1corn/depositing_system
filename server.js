@@ -132,6 +132,10 @@ app.get('/api/users/:username', async (req, res) => {
         } else {
             res.status(404).send('User not found');
         }
+    } catch (error) {
+        console.error("Error fetching user data:", error);
+        res.status(500).send('Error fetching user data');
+    }
 });
 
 // API to create/update a user
