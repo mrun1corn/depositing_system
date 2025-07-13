@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+    <script src="theme.js"></script>
+</head>
+<body class="light-mode d-flex align-items-center justify-content-center min-vh-100">
+    <div class="container">
+        <div class="theme-toggle-container">
+            <button id="theme-toggle" class="btn btn-light theme-toggle-button">
+                <i id="theme-toggle-dark-icon" class="fas fa-moon theme-icon"></i>
+                <i id="theme-toggle-light-icon" class="fas fa-sun theme-icon hidden"></i>
+            </button>
+        </div>
+        <div class="row justify-content-center">
+            <div class="col-md-6 col-lg-4">
+                <div class="card shadow-lg login-card">
+                    <div class="card-body">
+                        <h1 class="card-title text-center mb-4">Login</h1>
+                        <form id="login-form">
+                            <div class="form-group">
+                                <label for="username">Username</label>
+                                <div class="input-group">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text"><i class="fas fa-user"></i></span>
+                                    </div>
+                                    <input id="username" type="text" class="form-control" placeholder="Username">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="password">Password</label>
+                                <div class="input-group">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                                    </div>
+                                    <input id="password" type="password" class="form-control" placeholder="******************">
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-primary btn-block mt-4 login-button">Sign In</button>
+                        </form>
+                        <p id="error-message" class="error-message text-center mt-3"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="auth.js"></script>
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>
