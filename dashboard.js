@@ -34,7 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const fetchData = async (endpoint) => {
         try {
-            const response = await fetch(`http://localhost:3000/api/${endpoint}`, {
+            const response = await fetch(`http://0.0.0.0:3000/api/${endpoint}`, {
                 headers: {
                     'X-Username': loggedInUser.username,
                     'X-User-Role': loggedInUser.role
@@ -56,7 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const postData = async (endpoint, data) => {
         try {
-            const response = await fetch(`http://localhost:3000/api/${endpoint}`, {
+            const response = await fetch(`http://0.0.0.0:3000/api/${endpoint}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -80,7 +80,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const putData = async (endpoint, data) => {
         try {
-            const response = await fetch(`http://localhost:3000/api/${endpoint}`, {
+            const response = await fetch(`http://0.0.0.0:3000/api/${endpoint}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -104,7 +104,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const deleteData = async (endpoint) => {
         try {
-            const response = await fetch(`http://localhost:3000/api/${endpoint}`, {
+            const response = await fetch(`http://0.0.0.0:3000/api/${endpoint}`, {
                 method: 'DELETE',
                 headers: {
                     'X-Username': loggedInUser.username,
