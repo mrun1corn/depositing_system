@@ -262,11 +262,56 @@ body.dark-mode .notification-item button {
     text-align: right;
 }
 
-/* Responsive Adjustments (Bootstrap handles most of this now) */
+/* Responsive Adjustments */
 @media (max-width: 768px) {
     .theme-toggle-container {
         position: static;
         text-align: right;
         margin-bottom: 10px;
+    }
+
+    .navbar-nav {
+        flex-direction: column; /* Stack nav items vertically */
+    }
+
+    .navbar-nav .nav-item {
+        margin-bottom: 5px; /* Add some space between stacked nav items */
+    }
+
+    .navbar-nav .btn {
+        margin-left: 0; /* Remove left margin when stacked */
+        width: 100%; /* Make buttons full width */
+    }
+
+    .form-group {
+        margin-bottom: 15px; /* Add vertical spacing to form groups */
+    }
+
+    .form-actions button {
+        width: 100%; /* Make form action buttons full width */
+        margin-left: 0 !important; /* Override ml-2 for stacked buttons */
+        margin-bottom: 10px; /* Space between stacked buttons */
+    }
+
+    .form-actions button:last-child {
+        margin-bottom: 0;
+    }
+
+    .col-sm-2, .col-sm-4, .col-sm-6 {
+        flex: 0 0 100%;
+        max-width: 100%;
+    }
+
+    .col-sm-2, .col-sm-4 {
+        margin-bottom: 10px;
+    }
+
+    .col-sm-6.text-right {
+        text-align: left !important;
+    }
+
+    .container {
+        padding-left: 15px;
+        padding-right: 15px;
     }
 }

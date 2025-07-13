@@ -239,7 +239,7 @@ document.addEventListener('DOMContentLoaded', () => {
         users.forEach(user => {
             const { totalPayment, lastMonthPayment } = calculatePaymentDetails(user.username, payments);
             userCardsHtml += `
-                <div class="col-md-4 mb-4">
+                <div class="col-12 col-sm-6 col-md-4 mb-4">
                     <div class="card user-card h-100 shadow-sm">
                         <div class="card-body">
                             <h5 class="card-title"><i class="fas fa-user-circle mr-2"></i>${user.username}</h5>
@@ -254,7 +254,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         dashboardContent.innerHTML = `
             <div class="row">
-                <div class="col-md-4 mb-4">
+                <div class="col-12 col-md-4 mb-4">
                     <div class="card text-white bg-primary h-100 shadow">
                         <div class="card-body">
                             <div class="d-flex justify-content-between align-items-center">
@@ -264,7 +264,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                     </div>
                 </div>
-                <div class="col-md-4 mb-4">
+                <div class="col-12 col-md-4 mb-4">
                     <div class="card text-white bg-success h-100 shadow">
                         <div class="card-body">
                             <div class="d-flex justify-content-between align-items-center">
@@ -274,7 +274,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                     </div>
                 </div>
-                <div class="col-md-4 mb-4">
+                <div class="col-12 col-md-4 mb-4">
                     <div class="card text-white bg-info h-100 shadow">
                         <div class="card-body">
                             <div class="d-flex justify-content-between align-items-center">
@@ -492,7 +492,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const users = await fetchData('users');
         dashboardContent.innerHTML = `
             <div class="row">
-                <div class="col-md-5 mb-4">
+                <div class="col-12 col-md-5 mb-4">
                     <div class="card shadow-lg">
                         <div class="card-header bg-primary text-white">
                             <h2 class="mb-0" id="user-form-title"><i class="fas fa-user-plus mr-2"></i>Create User</h2>
@@ -524,25 +524,25 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                     </div>
                 </div>
-                <div class="col-md-7 mb-4">
+                <div class="col-12 col-md-7 mb-4">
                     <div class="card shadow-lg">
                         <div class="card-header bg-dark text-white">
                             <h2 class="mb-0"><i class="fas fa-users-cog mr-2"></i>Users Management</h2>
                         </div>
                         <div class="card-body">
                             <div class="table-responsive">
-                                <table class="table table-striped table-hover data-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Username</th>
-                                            <th>Role</th>
-                                            <th>Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="user-list">
-                                    </tbody>
-                                </table>
-                            </div>
+                        <table class="table table-striped table-hover data-table">
+                            <thead>
+                                <tr>
+                                    <th>Username</th>
+                                    <th>Role</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="user-list">
+                            </tbody>
+                        </table>
+                    </div>
                         </div>
                     </div>
                 </div>
@@ -645,7 +645,7 @@ document.addEventListener('DOMContentLoaded', () => {
         users.forEach(user => {
             const { totalPayment, lastMonthPayment } = calculatePaymentDetails(user.username, payments);
             userCardsHtml += `
-                <div class="col-md-4 mb-4">
+                <div class="col-12 col-sm-6 col-md-4 mb-4">
                     <div class="card user-card h-100 shadow-sm">
                         <div class="card-body">
                             <h5 class="card-title"><i class="fas fa-user-circle mr-2"></i>${user.username}</h5>
@@ -660,7 +660,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         dashboardContent.innerHTML = `
             <div class="row">
-                <div class="col-md-4 mb-4">
+                <div class="col-12 col-md-4 mb-4">
                     <div class="card text-white bg-primary h-100 shadow">
                         <div class="card-body">
                             <div class="d-flex justify-content-between align-items-center">
@@ -670,7 +670,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                     </div>
                 </div>
-                <div class="col-md-4 mb-4">
+                <div class="col-12 col-md-4 mb-4">
                     <div class="card text-white bg-info h-100 shadow">
                         <div class="card-body">
                             <div class="d-flex justify-content-between align-items-center">
@@ -680,7 +680,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                     </div>
                 </div>
-                <div class="col-md-4 mb-4">
+                <div class="col-12 col-md-4 mb-4">
                     <div class="card text-white bg-warning h-100 shadow">
                         <div class="card-body">
                             <div class="d-flex justify-content-between align-items-center">
