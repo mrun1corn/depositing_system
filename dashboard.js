@@ -362,23 +362,29 @@ document.addEventListener('DOMContentLoaded', () => {
                     monthlySummary[payment.username] = { Username: payment.username };
                 }
                 if (!monthlySummary[payment.username][yearMonth]) {
-                    monthlySummary[payment.username][yearMonth] = 0;
+                    monthlySummary[payment.username][yearMonth] = [];
                 }
-                monthlySummary[payment.username][yearMonth] += parseFloat(payment.amount);
+                monthlySummary[payment.username][yearMonth].push(`${parseFloat(payment.amount).toFixed(2)} (${payment.paymentDate})`);
             });
 
-            const summaryArray = Object.values(monthlySummary);
-
-            // Add a total column
-            summaryArray.forEach(userSummary => {
+            const summaryArray = Object.values(monthlySummary).map(userSummary => {
+                const newUserSummary = { Username: userSummary.Username };
                 let total = 0;
                 for (const key in userSummary) {
                     if (key !== 'Username') {
-                        total += userSummary[key];
+                        newUserSummary[key] = userSummary[key].join(', ');
+                        userSummary[key].forEach(entry => {
+                            total += parseFloat(entry.split(' ')[0]);
+                        });
                     }
                 }
-                userSummary['Total Deposit'] = total.toFixed(2);
+                newUserSummary['Total Deposit'] = total.toFixed(2);
+                return newUserSummary;
             });
+
+            // Calculate grand total
+            const grandTotal = summaryArray.reduce((sum, user) => sum + parseFloat(user['Total Deposit']), 0);
+            summaryArray.push({ Username: 'Grand Total', 'Total Deposit': grandTotal.toFixed(2) });
 
             const worksheet = XLSX.utils.json_to_sheet(summaryArray);
             const workbook = XLSX.utils.book_new();
@@ -476,10 +482,44 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         document.getElementById('download-user-excel').addEventListener('click', () => {
-            const worksheet = XLSX.utils.json_to_sheet(userPayments);
+            const monthlySummary = {};
+
+            userPayments.forEach(payment => {
+                const date = new Date(payment.paymentDate);
+                const yearMonth = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}`;
+
+                if (!monthlySummary[payment.username]) {
+                    monthlySummary[payment.username] = { Username: payment.username };
+                }
+                if (!monthlySummary[payment.username][yearMonth]) {
+                    monthlySummary[payment.username][yearMonth] = [];
+                }
+                monthlySummary[payment.username][yearMonth].push(`${parseFloat(payment.amount).toFixed(2)} (${payment.paymentDate})`);
+            });
+
+            const summaryArray = Object.values(monthlySummary).map(userSummary => {
+                const newUserSummary = { Username: userSummary.Username };
+                let total = 0;
+                for (const key in userSummary) {
+                    if (key !== 'Username') {
+                        newUserSummary[key] = userSummary[key].join(', ');
+                        userSummary[key].forEach(entry => {
+                            total += parseFloat(entry.split(' ')[0]);
+                        });
+                    }
+                }
+                newUserSummary['Total Deposit'] = total.toFixed(2);
+                return newUserSummary;
+            });
+
+            // Calculate grand total
+            const grandTotal = summaryArray.reduce((sum, user) => sum + parseFloat(user['Total Deposit']), 0);
+            summaryArray.push({ Username: 'Grand Total', 'Total Deposit': grandTotal.toFixed(2) });
+
+            const worksheet = XLSX.utils.json_to_sheet(summaryArray);
             const workbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workbook, worksheet, 'Payments');
-            XLSX.writeFile(workbook, `${username}_payments.xlsx`);
+            XLSX.utils.book_append_sheet(workbook, worksheet, 'Monthly Payments Summary');
+            XLSX.writeFile(workbook, `${username}_payments_summary.xlsx`);
         });
 
         document.getElementById('back-to-admin-dashboard').addEventListener('click', () => {
@@ -766,23 +806,29 @@ document.addEventListener('DOMContentLoaded', () => {
                     monthlySummary[payment.username] = { Username: payment.username };
                 }
                 if (!monthlySummary[payment.username][yearMonth]) {
-                    monthlySummary[payment.username][yearMonth] = 0;
+                    monthlySummary[payment.username][yearMonth] = [];
                 }
-                monthlySummary[payment.username][yearMonth] += parseFloat(payment.amount);
+                monthlySummary[payment.username][yearMonth].push(`${parseFloat(payment.amount).toFixed(2)} (${payment.paymentDate})`);
             });
 
-            const summaryArray = Object.values(monthlySummary);
-
-            // Add a total column
-            summaryArray.forEach(userSummary => {
+            const summaryArray = Object.values(monthlySummary).map(userSummary => {
+                const newUserSummary = { Username: userSummary.Username };
                 let total = 0;
                 for (const key in userSummary) {
                     if (key !== 'Username') {
-                        total += userSummary[key];
+                        newUserSummary[key] = userSummary[key].join(', ');
+                        userSummary[key].forEach(entry => {
+                            total += parseFloat(entry.split(' ')[0]);
+                        });
                     }
                 }
-                userSummary['Total Deposit'] = total.toFixed(2);
+                newUserSummary['Total Deposit'] = total.toFixed(2);
+                return newUserSummary;
             });
+
+            // Calculate grand total
+            const grandTotal = summaryArray.reduce((sum, user) => sum + parseFloat(user['Total Deposit']), 0);
+            summaryArray.push({ Username: 'Grand Total', 'Total Deposit': grandTotal.toFixed(2) });
 
             const worksheet = XLSX.utils.json_to_sheet(summaryArray);
             const workbook = XLSX.utils.book_new();
@@ -984,10 +1030,44 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         document.getElementById('download-user-excel').addEventListener('click', () => {
-            const worksheet = XLSX.utils.json_to_sheet(userPayments);
+            const monthlySummary = {};
+
+            userPayments.forEach(payment => {
+                const date = new Date(payment.paymentDate);
+                const yearMonth = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}`;
+
+                if (!monthlySummary[loggedInUser.username]) {
+                    monthlySummary[loggedInUser.username] = { Username: loggedInUser.username };
+                }
+                if (!monthlySummary[loggedInUser.username][yearMonth]) {
+                    monthlySummary[loggedInUser.username][yearMonth] = [];
+                }
+                monthlySummary[loggedInUser.username][yearMonth].push(`${parseFloat(payment.amount).toFixed(2)} (${payment.paymentDate})`);
+            });
+
+            const summaryArray = Object.values(monthlySummary).map(userSummary => {
+                const newUserSummary = { Username: userSummary.Username };
+                let total = 0;
+                for (const key in userSummary) {
+                    if (key !== 'Username') {
+                        newUserSummary[key] = userSummary[key].join(', ');
+                        userSummary[key].forEach(entry => {
+                            total += parseFloat(entry.split(' ')[0]);
+                        });
+                    }
+                }
+                newUserSummary['Total Deposit'] = total.toFixed(2);
+                return newUserSummary;
+            });
+
+            // Calculate grand total
+            const grandTotal = summaryArray.reduce((sum, user) => sum + parseFloat(user['Total Deposit']), 0);
+            summaryArray.push({ Username: 'Grand Total', 'Total Deposit': grandTotal.toFixed(2) });
+
+            const worksheet = XLSX.utils.json_to_sheet(summaryArray);
             const workbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workbook, worksheet, 'Payments');
-            XLSX.writeFile(workbook, `${loggedInUser.username}_payments.xlsx`);
+            XLSX.utils.book_append_sheet(workbook, worksheet, 'Monthly Payments Summary');
+            XLSX.writeFile(workbook, `${loggedInUser.username}_payments_summary.xlsx`);
         });
 
         const notificationsDiv = document.getElementById('notifications');
