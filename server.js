@@ -307,7 +307,7 @@ app.get('/api/all-payments', authorize(['admin', 'accountant', 'user']), async (
 });
 
 // API to get all notifications (for admin dashboard)
-app.get('/api/all-notifications', authorize(['admin', 'accountant']), async (req, res) => {
+app.get('/api/all-notifications', authorize(['admin', 'accountant', 'user']), async (req, res) => {
     try {
         const notifications = await getAllNotifications();
         res.json(notifications);
