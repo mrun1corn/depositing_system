@@ -1,6 +1,7 @@
 const { MongoClient } = require('mongodb');
 const fs = require('fs');
 const path = require('path');
+const bcrypt = require('bcryptjs');
 
 const mongoURI = "mongodb+srv://robin:robin01716@deposit.udyoebh.mongodb.net/?retryWrites=true&w=majority&appName=deposit";
 const client = new MongoClient(mongoURI);
@@ -12,12 +13,11 @@ async function migrateData() {
         await client.connect();
         console.log("Connected to MongoDB for data migration.");
 
-        const db = client.db("deposit"); // Use your database name
+        const db = client.db("deposit");
         const usersCollection = db.collection("users");
         const paymentsCollection = db.collection("payments");
         const notificationsCollection = db.collection("notifications");
 
-        // Clear existing data in collections to prevent duplicates on re-run
         await usersCollection.deleteMany({});
         await paymentsCollection.deleteMany({});
         await notificationsCollection.deleteMany({});
@@ -31,15 +31,15 @@ async function migrateData() {
             try {
                 const userData = JSON.parse(fs.readFileSync(userFilePath, 'utf8'));
 
-                // Insert user data into users collection
+                const hashedPassword = await bcrypt.hash(userData.password, 10);
+
                 await usersCollection.insertOne({
                     username: userData.username,
-                    password: userData.password,
+                    password: hashedPassword,
                     role: userData.role
                 });
                 console.log(`Migrated user: ${userData.username}`);
 
-                // Insert payments into payments collection
                 if (userData.payments && userData.payments.length > 0) {
                     const paymentsToInsert = userData.payments.map(p => ({
                         username: userData.username,
@@ -52,7 +52,6 @@ async function migrateData() {
                     console.log(`Migrated ${paymentsToInsert.length} payments for ${userData.username}`);
                 }
 
-                // Insert notifications into notifications collection
                 if (userData.notifications && userData.notifications.length > 0) {
                     const notificationsToInsert = userData.notifications.map(n => ({
                         username: userData.username,

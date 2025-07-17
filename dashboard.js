@@ -1,6 +1,8 @@
 document.addEventListener('DOMContentLoaded', () => {
+    const token = localStorage.getItem('token');
     const loggedInUser = JSON.parse(localStorage.getItem('loggedInUser'));
-    if (!loggedInUser) {
+
+    if (!token || !loggedInUser) {
         window.location.href = 'index.html';
         return;
     }
@@ -36,8 +38,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const response = await fetch(`/api/${endpoint}`, {
                 headers: {
-                    'X-Username': loggedInUser.username,
-                    'X-User-Role': loggedInUser.role
+                    'Authorization': `Bearer ${token}`,
                 }
             });
             if (!response.ok) {
@@ -60,8 +61,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-Username': loggedInUser.username,
-                    'X-User-Role': loggedInUser.role
+                    'Authorization': `Bearer ${token}`,
                 },
                 body: JSON.stringify(data)
             });
@@ -84,8 +84,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-Username': loggedInUser.username,
-                    'X-User-Role': loggedInUser.role
+                    'Authorization': `Bearer ${token}`,
                 },
                 body: JSON.stringify(data)
             });
@@ -107,8 +106,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await fetch(`/api/${endpoint}`, {
                 method: 'DELETE',
                 headers: {
-                    'X-Username': loggedInUser.username,
-                    'X-User-Role': loggedInUser.role
+                    'Authorization': `Bearer ${token}`,
                 }
             });
             if (!response.ok) {
@@ -130,37 +128,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (loggedInUser.role === 'admin') {
             links = [
-                { name: 'Dashboard', id: 'admin-dashboard', icon: 'fas fa-chart-line' },
-                { name: 'Users', id: 'admin-users', icon: 'fas fa-users' },
-                { name: 'Deposit', id: 'admin-deposit', icon: 'fas fa-money-check-alt' }
+                { name: 'Dashboard', id: 'admin-dashboard', icon: 'fas fa-chart-line', hash: '#admin-dashboard' },
+                { name: 'Users', id: 'admin-users', icon: 'fas fa-users', hash: '#admin-users' },
+                { name: 'Deposit', id: 'admin-deposit', icon: 'fas fa-money-check-alt', hash: '#admin-deposit' }
             ];
         } else if (loggedInUser.role === 'accountant') {
             links = [
-                { name: 'Dashboard', id: 'accountant-dashboard', icon: 'fas fa-chart-line' },
-                { name: 'Deposit', id: 'accountant-deposit', icon: 'fas fa-money-check-alt' }
+                { name: 'Dashboard', id: 'accountant-dashboard', icon: 'fas fa-chart-line', hash: '#accountant-dashboard' },
+                { name: 'Deposit', id: 'accountant-deposit', icon: 'fas fa-money-check-alt', hash: '#accountant-deposit' }
             ];
         } else if (loggedInUser.role === 'user') {
             links = [
-                { name: 'Dashboard', id: 'user-dashboard', icon: 'fas fa-chart-line' }
+                { name: 'Dashboard', id: 'user-dashboard', icon: 'fas fa-chart-line', hash: '#user-dashboard' }
             ];
         }
 
         links.forEach(link => {
             const li = document.createElement('li');
             li.className = 'nav-item';
-            const button = document.createElement('button');
-            button.className = `btn btn-outline-light mx-1 ${activeTab === link.id ? 'active' : ''}`;
-            button.innerHTML = `<i class="${link.icon} mr-2"></i>${link.name}`;
-            button.addEventListener('click', () => {
-                if (link.id === 'admin-dashboard') renderAdminDashboard();
-                else if (link.id === 'admin-users') renderAdminUsers();
-                else if (link.id === 'admin-deposit') renderAccountantDeposit();
-                else if (link.id === 'accountant-dashboard') renderAccountantDashboard();
-                else if (link.id === 'accountant-deposit') renderAccountantDeposit();
-                else if (link.id === 'user-dashboard') renderUserDashboard();
-                renderNavBar(link.id);
-            });
-            li.appendChild(button);
+            const a = document.createElement('a');
+            a.href = link.hash;
+            a.className = `btn btn-outline-light mx-1 ${activeTab === link.id ? 'active' : ''}`;
+            a.innerHTML = `<i class="${link.icon} mr-2"></i>${link.name}`;
+            li.appendChild(a);
             navLinksContainer.appendChild(li);
         });
     };
@@ -168,11 +158,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const setupPaymentEventListeners = () => {
         document.querySelectorAll('.edit-payment-btn').forEach(button => {
             button.addEventListener('click', (e) => {
-                const id = e.target.dataset.id;
-                const username = e.target.dataset.username;
-                const amount = e.target.dataset.amount;
-                const date = e.target.dataset.date;
-                const method = e.target.dataset.method;
+                const btn = e.target.closest('.edit-payment-btn');
+                const id = btn.dataset.id;
+                const username = btn.dataset.username;
+                const amount = btn.dataset.amount;
+                const date = btn.dataset.date;
+                const method = btn.dataset.method;
 
                 document.getElementById('edit-payment-id').value = id;
                 document.getElementById('edit-username').value = username;
@@ -184,17 +175,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         document.querySelectorAll('.delete-payment-btn').forEach(button => {
             button.addEventListener('click', async (e) => {
-                const id = e.target.dataset.id;
+                const btn = e.target.closest('.delete-payment-btn');
+                const id = btn.dataset.id;
                 if (confirm('Are you sure you want to delete this payment?')) {
                     const result = await deleteData(`payments/${id}`);
                     if (result !== 'Access Denied') {
                         alert('Payment deleted successfully!');
-                        // Re-render the appropriate dashboard based on the user's role
-                        if (loggedInUser.role === 'admin') {
-                            renderAdminDashboard();
-                        } else if (loggedInUser.role === 'accountant') {
-                            renderAccountantDashboard();
-                        }
+                        handleRouting();
                     }
                 }
             });
@@ -211,18 +198,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const result = await putData(`payments/${id}`, { username, amount, paymentDate, paymentMethod });
             if (result !== 'Access Denied') {
                 alert('Payment updated successfully!');
-                $('#editPaymentModal').modal('hide'); // Hide the modal
-                // Re-render the appropriate dashboard based on the user's role
-                if (loggedInUser.role === 'admin') {
-                    renderAdminDashboard();
-                } else if (loggedInUser.role === 'accountant') {
-                    renderAccountantDashboard();
-                }
+                $('#editPaymentModal').modal('hide');
+                handleRouting();
             }
         });
     };
 
-    // Admin Dashboard (Overview)
     const renderAdminDashboard = async () => {
         const users = await fetchData('users');
         const payments = await fetchData('all-payments');
@@ -232,8 +213,6 @@ document.addEventListener('DOMContentLoaded', () => {
         payments.forEach(payment => {
             totalDeposit += parseFloat(payment.amount);
         });
-
-        
 
         let userCardsHtml = '';
         users.forEach(user => {
@@ -325,7 +304,7 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         `;
         const notificationList = document.getElementById('notification-list');
-        notifications.slice(-5).reverse().forEach(notification => { // Show last 5 notifications
+        notifications.slice(-5).reverse().forEach(notification => {
             const notificationElement = document.createElement('div');
             notificationElement.className = 'notification-item';
             notificationElement.innerHTML = `
@@ -382,7 +361,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 return newUserSummary;
             });
 
-            // Calculate grand total
             const grandTotal = summaryArray.reduce((sum, user) => sum + parseFloat(user['Total Deposit']), 0);
             summaryArray.push({ Username: 'Grand Total', 'Total Deposit': grandTotal.toFixed(2) });
 
@@ -392,20 +370,18 @@ document.addEventListener('DOMContentLoaded', () => {
             XLSX.writeFile(workbook, 'all_payments_summary_admin.xlsx');
         });
 
-        // Add click listener to user cards
         document.getElementById('user-overview-cards').addEventListener('click', (e) => {
             const userCard = e.target.closest('.user-card');
             if (userCard) {
                 const username = userCard.querySelector('h5').textContent.trim();
-                console.log('Clicked username:', username);
-                renderUserPaymentDetails(username);
+                window.location.hash = `#user-details/${username}`;
             }
         });
 
+        setupPaymentEventListeners();
         renderNavBar('admin-dashboard');
     };
 
-    // Function to render detailed payment history for a selected user
     const renderUserPaymentDetails = async (username) => {
         const allPayments = await fetchData('all-payments');
         const userPayments = allPayments.filter(p => p.username === username);
@@ -512,7 +488,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 return newUserSummary;
             });
 
-            // Calculate grand total
             const grandTotal = summaryArray.reduce((sum, user) => sum + parseFloat(user['Total Deposit']), 0);
             summaryArray.push({ Username: 'Grand Total', 'Total Deposit': grandTotal.toFixed(2) });
 
@@ -523,11 +498,10 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         document.getElementById('back-to-admin-dashboard').addEventListener('click', () => {
-            renderAdminDashboard();
+            window.location.hash = '#admin-dashboard';
         });
     };
 
-    // Admin Users Management
     const renderAdminUsers = async () => {
         const users = await fetchData('users');
         dashboardContent.innerHTML = `
@@ -615,23 +589,26 @@ document.addEventListener('DOMContentLoaded', () => {
                     <td>${user.username}</td>
                     <td>${user.role}</td>
                     <td>
-                        <button class="btn btn-sm btn-info mr-2" data-username="${user.username}" data-action="edit"><i class="fas fa-edit"></i> Edit</button>
-                        <button class="btn btn-sm btn-danger" data-username="${user.username}" data-action="delete"><i class="fas fa-trash-alt"></i> Delete</button>
+                        <button class="btn btn-sm btn-info mr-2 edit-user-btn" data-username="${user.username}"><i class="fas fa-edit"></i> Edit</button>
+                        <button class="btn btn-sm btn-danger delete-user-btn" data-username="${user.username}"><i class="fas fa-trash-alt"></i> Delete</button>
                     </td>
                 `;
                 userList.appendChild(tr);
             });
 
-            userList.addEventListener('click', async (e) => {
-                const action = e.target.dataset.action;
-                const username = e.target.dataset.username;
-
-                if (action === 'delete') {
+            document.querySelectorAll('.delete-user-btn').forEach(button => {
+                button.addEventListener('click', async (e) => {
+                    const username = e.target.closest('.delete-user-btn').dataset.username;
                     if (confirm(`Are you sure you want to delete ${username}?`)) {
                         await deleteData(`users/${username}`);
                         renderAdminUsers();
                     }
-                } else if (action === 'edit') {
+                });
+            });
+
+            document.querySelectorAll('.edit-user-btn').forEach(button => {
+                button.addEventListener('click', async (e) => {
+                    const username = e.target.closest('.edit-user-btn').dataset.username;
                     const userToEdit = await fetchData(`users/${username}`);
                     if (userToEdit) {
                         userFormTitle.textContent = 'Edit User';
@@ -641,7 +618,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         newUsernameInput.value = userToEdit.username;
                         roleInput.value = userToEdit.role;
                     }
-                }
+                });
             });
         };
 
@@ -658,7 +635,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 username: newUsername,
                 password: newPassword,
                 role: role,
-                originalUsername: originalUsername // Pass original username for update
+                originalUsername: originalUsername
             };
 
             await postData('users', userData);
@@ -670,7 +647,6 @@ document.addEventListener('DOMContentLoaded', () => {
         renderNavBar('admin-users');
     };
 
-    // Accountant Dashboard (Overview)
     const renderAccountantDashboard = async () => {
         const users = await fetchData('users');
         const payments = await fetchData('all-payments');
@@ -767,7 +743,7 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         `;
         const notificationList = document.getElementById('notification-list');
-        notifications.slice(-5).reverse().forEach(notification => { // Show last 5 notifications
+        notifications.slice(-5).reverse().forEach(notification => {
             const notificationElement = document.createElement('div');
             notificationElement.className = 'notification-item';
             notificationElement.innerHTML = `
@@ -826,7 +802,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 return newUserSummary;
             });
 
-            // Calculate grand total
             const grandTotal = summaryArray.reduce((sum, user) => sum + parseFloat(user['Total Deposit']), 0);
             summaryArray.push({ Username: 'Grand Total', 'Total Deposit': grandTotal.toFixed(2) });
 
@@ -836,20 +811,17 @@ document.addEventListener('DOMContentLoaded', () => {
             XLSX.writeFile(workbook, 'all_payments_summary.xlsx');
         });
 
-        // Add click listener to user cards
         document.getElementById('user-overview-cards').addEventListener('click', (e) => {
             const userCard = e.target.closest('.user-card');
             if (userCard) {
                 const username = userCard.querySelector('h5').textContent.trim();
-                console.log('Clicked username:', username);
-                renderUserPaymentDetails(username);
+                window.location.hash = `#user-details/${username}`;
             }
         });
 
         renderNavBar('accountant-dashboard');
     };
 
-    // Accountant Deposit Input and Notifications
     const renderAccountantDeposit = async () => {
         const users = await fetchData('users');
         dashboardContent.innerHTML = `
@@ -919,11 +891,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (result !== 'Access Denied') {
                 alert('Payment added!');
                 e.target.reset();
-                if (loggedInUser.role === 'admin') {
-                    renderAdminDashboard();
-                } else if (loggedInUser.role === 'accountant') {
-                    renderAccountantDashboard();
-                }
+                handleRouting();
             }
         });
 
@@ -939,7 +907,6 @@ document.addEventListener('DOMContentLoaded', () => {
         renderNavBar('accountant-deposit');
     };
 
-    // User Dashboard (Overview)
     const renderUserDashboard = async () => {
         const allPayments = await fetchData('all-payments');
         const userPayments = allPayments.filter(p => p.username === loggedInUser.username);
@@ -991,7 +958,6 @@ document.addEventListener('DOMContentLoaded', () => {
                                     <th>Amount</th>
                                     <th>Payment Date</th>
                                     <th>Payment Method</th>
-                                    <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="user-payment-list">
@@ -1011,14 +977,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     <td>${payment.amount}</td>
                     <td>${payment.paymentDate}</td>
                     <td>${payment.paymentMethod}</td>
-                    <td>
-                        <button class="btn btn-sm btn-info edit-payment-btn" data-id="${payment._id}" data-username="${payment.username}" data-amount="${payment.amount}" data-date="${payment.paymentDate}" data-method="${payment.paymentMethod}" data-toggle="modal" data-target="#editPaymentModal"><i class="fas fa-edit"></i></button>
-                        <button class="btn btn-sm btn-danger delete-payment-btn" data-id="${payment._id}"><i class="fas fa-trash-alt"></i></button>
-                    </td>
                 `;
                 userPaymentList.appendChild(tr);
             });
-            setupPaymentEventListeners();
         };
 
         renderUserPaymentsTable(userPayments);
@@ -1060,7 +1021,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 return newUserSummary;
             });
 
-            // Calculate grand total
             const grandTotal = summaryArray.reduce((sum, user) => sum + parseFloat(user['Total Deposit']), 0);
             summaryArray.push({ Username: 'Grand Total', 'Total Deposit': grandTotal.toFixed(2) });
 
@@ -1095,17 +1055,72 @@ document.addEventListener('DOMContentLoaded', () => {
         renderNavBar('user-dashboard');
     };
 
-    // Initial render based on role
-    if (loggedInUser.role === 'admin') {
-        renderAdminDashboard();
-    } else if (loggedInUser.role === 'accountant') {
-        renderAccountantDashboard();
-    } else if (loggedInUser.role === 'user') {
-        renderUserDashboard();
-    }
+    const handleRouting = () => {
+        const hash = window.location.hash;
+        if (hash.startsWith('#user-details/')) {
+            const username = hash.split('/')[1];
+            renderUserPaymentDetails(username);
+        } else if (hash === '#admin-users') {
+            renderAdminUsers();
+        } else if (hash === '#admin-deposit' || hash === '#accountant-deposit') {
+            renderAccountantDeposit();
+        } else if (hash === '#accountant-dashboard') {
+            renderAccountantDashboard();
+        } else if (hash === '#user-dashboard') {
+            renderUserDashboard();
+        } else {
+            if (loggedInUser.role === 'admin') {
+                renderAdminDashboard();
+            } else if (loggedInUser.role === 'accountant') {
+                renderAccountantDashboard();
+            } else if (loggedInUser.role === 'user') {
+                renderUserDashboard();
+            }
+        }
+    };
+
+    window.addEventListener('hashchange', handleRouting);
+    handleRouting();
 
     document.getElementById('logout-button').addEventListener('click', () => {
+        localStorage.removeItem('token');
         localStorage.removeItem('loggedInUser');
         window.location.href = 'index.html';
+    });
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+    const themeToggle = document.getElementById('theme-toggle');
+    const body = document.body;
+    const darkIcon = document.getElementById('theme-toggle-dark-icon');
+    const lightIcon = document.getElementById('theme-toggle-light-icon');
+
+    const applyTheme = (theme) => {
+        if (theme === 'dark') {
+            body.classList.add('dark-mode');
+            body.classList.remove('light-mode');
+            darkIcon.classList.add('hidden');
+            lightIcon.classList.remove('hidden');
+        } else {
+            body.classList.add('light-mode');
+            body.classList.remove('dark-mode');
+            darkIcon.classList.remove('hidden');
+            lightIcon.classList.add('hidden');
+        }
+    };
+
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme) {
+        applyTheme(savedTheme);
+    }
+
+    themeToggle.addEventListener('click', () => {
+        if (body.classList.contains('light-mode')) {
+            applyTheme('dark');
+            localStorage.setItem('theme', 'dark');
+        } else {
+            applyTheme('light');
+            localStorage.setItem('theme', 'light');
+        }
     });
 });
