@@ -8,6 +8,7 @@ const authRoutes = require('./routes/auth');
 const protectedRoutes = require('./routes/protected');
 
 const app = express();
+const path = require('path');
 const http = require('http');
 const server = http.createServer(app);
 const socketManager = require('./socketManager');
@@ -21,6 +22,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api', protectedRoutes);
 
 app.use(express.static(__dirname));
+app.use('/node_modules', express.static(path.join(__dirname, 'node_modules')));
 
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
