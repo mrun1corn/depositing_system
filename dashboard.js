@@ -42,6 +42,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const dashboardContent = document.getElementById('dashboard-content');
     const navLinksContainer = document.getElementById('nav-links');
 
+    const formatDate = (dateString) => {
+        const date = new Date(dateString);
+        return date.toISOString().split('T')[0];
+    };
+
     const calculatePaymentDetails = (username, allPayments) => {
         const userPayments = allPayments.filter(p => p.username === username);
         let totalPayment = 0;
@@ -350,10 +355,10 @@ document.addEventListener('DOMContentLoaded', () => {
             tr.innerHTML = `
                 <td>${payment.username}</td>
                 <td>${payment.amount}</td>
-                <td>${payment.paymentDate}</td>
+                <td>${formatDate(payment.paymentDate)}</td>
                 <td>${payment.paymentMethod}</td>
                 <td>
-                    <button class="btn btn-sm btn-info edit-payment-btn" data-id="${payment._id}" data-username="${payment.username}" data-amount="${payment.amount}" data-date="${payment.paymentDate}" data-method="${payment.paymentMethod}" data-toggle="modal" data-target="#editPaymentModal"><i class="fas fa-edit"></i></button>
+                    <button class="btn btn-sm btn-info edit-payment-btn" data-id="${payment._id}" data-username="${payment.username}" data-amount="${payment.amount}" data-date="${formatDate(payment.paymentDate)}" data-method="${payment.paymentMethod}" data-toggle="modal" data-target="#editPaymentModal"><i class="fas fa-edit"></i></button>
                     <button class="btn btn-sm btn-danger delete-payment-btn" data-id="${payment._id}"><i class="fas fa-trash-alt"></i></button>
                 </td>
             `;
@@ -467,10 +472,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td>${payment.amount}</td>
-                    <td>${payment.paymentDate}</td>
+                    <td>${formatDate(payment.paymentDate)}</td>
                     <td>${payment.paymentMethod}</td>
                     <td>
-                        <button class="btn btn-sm btn-info edit-payment-btn" data-id="${payment._id}" data-username="${payment.username}" data-amount="${payment.amount}" data-date="${payment.paymentDate}" data-method="${payment.paymentMethod}" data-toggle="modal" data-target="#editPaymentModal"><i class="fas fa-edit"></i></button>
+                        <button class="btn btn-sm btn-info edit-payment-btn" data-id="${payment._id}" data-username="${payment.username}" data-amount="${payment.amount}" data-date="${formatDate(payment.paymentDate)}" data-method="${payment.paymentMethod}" data-toggle="modal" data-target="#editPaymentModal"><i class="fas fa-edit"></i></button>
                         <button class="btn btn-sm btn-danger delete-payment-btn" data-id="${payment._id}"><i class="fas fa-trash-alt"></i></button>
                     </td>
                 `;
@@ -1005,7 +1010,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td>${payment.amount}</td>
-                    <td>${payment.paymentDate}</td>
+                    <td>${formatDate(payment.paymentDate)}</td>
                     <td>${payment.paymentMethod}</td>
                 `;
                 userPaymentList.appendChild(tr);
