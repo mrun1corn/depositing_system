@@ -7,6 +7,36 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
+    // Initialize Socket.IO connection
+    const socket = io();
+
+    // Listen for payment events
+    socket.on('paymentAdded', (newPayment) => {
+        console.log('Payment added in real-time:', newPayment);
+        handleRouting();
+    });
+
+    socket.on('paymentUpdated', (updatedPayment) => {
+        console.log('Payment updated in real-time:', updatedPayment);
+        handleRouting();
+    });
+
+    socket.on('paymentDeleted', (deletedPayment) => {
+        console.log('Payment deleted in real-time:', deletedPayment);
+        handleRouting();
+    });
+
+    // Listen for notification events
+    socket.on('notificationAdded', (newNotification) => {
+        console.log('Notification added in real-time:', newNotification);
+        handleRouting();
+    });
+
+    socket.on('notificationUpdated', (updatedNotification) => {
+        console.log('Notification updated in real-time:', updatedNotification);
+        handleRouting();
+    });
+
     document.getElementById('logged-in-username').textContent = `Logged in as: ${loggedInUser.username} (${loggedInUser.role})`;
 
     const dashboardContent = document.getElementById('dashboard-content');

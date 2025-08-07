@@ -23,21 +23,16 @@ router.post('/register', async (req, res) => {
 
 router.post('/login', async (req, res) => {
     const { username, password } = req.body;
-    console.log(`Login attempt for username: ${username}`);
 
     const user = await User.findByUsername(username);
     if (!user) {
-        console.log(`Login failed: User ${username} not found.`);
         return res.status(400).send('Invalid username or password.');
     }
-    console.log(`User ${username} found.`);
 
     const validPassword = await bcrypt.compare(password, user.password);
     if (!validPassword) {
-        console.log(`Login failed: Invalid password for user ${username}.`);
         return res.status(400).send('Invalid username or password.');
     }
-    console.log(`Password for user ${username} is valid.`);
 
     const token = jwt.sign({ _id: user._id, username: user.username, role: user.role }, 'your_jwt_secret');
     res.send({ token });

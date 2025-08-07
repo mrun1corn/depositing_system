@@ -21,6 +21,7 @@ This is a simple depositing system built with Node.js, Express, and MongoDB.
     ```
     MONGO_URI="mongodb+srv://<username>:<password>@<cluster-url>/<database-name>?retryWrites=true&w=majority&appName=<app-name>"
     PORT=3000
+    DB_NAME="your_db_name"
     ```
 
     Replace `<username>`, `<password>`, `<cluster-url>`, `<database-name>`, and `<app-name>` with your MongoDB connection details.

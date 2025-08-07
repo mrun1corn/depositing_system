@@ -10,19 +10,21 @@ class User {
 
     async save() {
         const db = getDb();
-        const result = await db.collection('users').insertOne(this);
-        return result;
+        if (this._id) {
+            // If _id exists, it's an update operation
+            const result = await db.collection('users').replaceOne({ _id: this._id }, this);
+            return result.modifiedCount > 0;
+        } else {
+            // If _id does not exist, it's an insert operation
+            const result = await db.collection('users').insertOne(this);
+            this._id = result.insertedId; // Set the _id for the current object
+            return result.acknowledged;
+        }
     }
 
     static async findByUsername(username) {
         const db = getDb();
-        console.log(`Searching for user with username: '${username}'`);
         const user = await db.collection('users').findOne({ username: username });
-        if (user) {
-            console.log(`User found: ${user.username}`);
-        } else {
-            console.log(`User '${username}' not found in DB.`);
-        }
         return user;
     }
 

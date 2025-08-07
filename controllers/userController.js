@@ -1,6 +1,7 @@
 
 const User = require('../models/user');
 const bcrypt = require('bcryptjs');
+const socketManager = require('../socketManager');
 
 exports.getAllUsers = async (req, res) => {
     try {
@@ -35,23 +36,30 @@ exports.createUser = async (req, res) => {
             await User.deleteByUsername(originalUsername);
         }
 
-        let userToUpdate = await User.findByUsername(username);
-        let hashedPassword = password; // Assume password is plain text if provided
+        let userToUpdate;
+        const existingUserDoc = await User.findByUsername(username);
 
-        if (password) {
-            hashedPassword = await bcrypt.hash(password, 10);
-        }
+        if (existingUserDoc) {
+            userToUpdate = new User(existingUserDoc.username, existingUserDoc.password, existingUserDoc.role);
+            userToUpdate._id = existingUserDoc._id; // Preserve the original _id
 
-        if (userToUpdate) {
             if (password) { // Only update password if a new one is provided
-                userToUpdate.password = hashedPassword;
+                const newHashedPassword = await bcrypt.hash(password, 10);
+                userToUpdate.password = newHashedPassword;
             }
             userToUpdate.role = role;
         } else {
-            userToUpdate = new User(username, hashedPassword, role);
+            if (!password) {
+                return res.status(400).send('Password is required for new user creation.');
+            }
+            const newHashedPassword = await bcrypt.hash(password, 10);
+            userToUpdate = new User(username, newHashedPassword, role);
         }
         const success = await userToUpdate.save();
+
         if (success) {
+            const io = socketManager.getIo();
+            io.emit('userUpdated', { username: userToUpdate.username, role: userToUpdate.role }); // Emit real-time update
             res.status(200).send('User saved successfully');
         } else {
             res.status(500).send('Failed to save user');
@@ -66,6 +74,8 @@ exports.deleteUser = async (req, res) => {
         const username = req.params.username;
         const result = await User.deleteByUsername(username);
         if (result.deletedCount > 0) {
+            const io = socketManager.getIo();
+            io.emit('userDeleted', { username: username }); // Emit real-time update
             res.status(200).send('User deleted successfully');
         } else {
             res.status(404).send('User not found');

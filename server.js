@@ -8,6 +8,10 @@ const authRoutes = require('./routes/auth');
 const protectedRoutes = require('./routes/protected');
 
 const app = express();
+const http = require('http');
+const server = http.createServer(app);
+const socketManager = require('./socketManager');
+
 app.use(express.json());
 app.use(cors());
 
@@ -23,9 +27,10 @@ app.get('/', (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
+server.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
     console.log('Server started successfully.');
+    socketManager.init(server); // Initialize Socket.IO after server starts listening
 });
 
-module.exports = { app };
+module.exports = { app, server };

@@ -1,12 +1,19 @@
 
 const Notification = require('../models/notification');
+const socketManager = require('../socketManager');
 
 exports.sendNotification = async (req, res) => {
     try {
         const { username, message } = req.body;
         const notification = new Notification(username, message);
-        await notification.save();
-        res.status(200).send('Notification sent successfully');
+        const result = await notification.save();
+        if (result.acknowledged) {
+            const io = socketManager.getIo();
+            io.emit('notificationAdded', { ...notification, _id: result.insertedId }); // Emit real-time update
+            res.status(200).send('Notification sent successfully');
+        } else {
+            res.status(500).send('Failed to send notification');
+        }
     } catch (error) {
         console.error("Error sending notification:", error);
         res.status(500).send('Error sending notification');
@@ -28,6 +35,8 @@ exports.markNotificationAsRead = async (req, res) => {
             const result = await Notification.markAsRead(id);
 
             if (result.matchedCount > 0) {
+                const io = socketManager.getIo();
+                io.emit('notificationUpdated', { _id: id, read: true }); // Emit real-time update
                 res.status(200).send('Notification marked as read');
             } else {
                 res.status(500).send('Failed to mark notification as read');
