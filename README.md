@@ -15,14 +15,17 @@ This is a simple depositing system built with Node.js, Express, and MongoDB.
     npm install
     ```
 
-3.  **Configure MongoDB Connection:**
+3.  **Configuration:**
     Create a `.env` file in the root of your project with the following content:
 
     ```
     MONGO_URI="mongodb+srv://<username>:<password>@<cluster-url>/<database-name>?retryWrites=true&w=majority&appName=<app-name>"
+    PORT=3000
     ```
 
     Replace `<username>`, `<password>`, `<cluster-url>`, `<database-name>`, and `<app-name>` with your MongoDB connection details.
+
+    The `PORT` variable sets the port on which the server will listen. If `PORT` is not set, it defaults to `3000`.
 
     If `MONGO_URI` is not set in the `.env` file, it will default to `mongodb://localhost:27017/deposit_system` for local development.
 
@@ -30,7 +33,7 @@ This is a simple depositing system built with Node.js, Express, and MongoDB.
     ```bash
     node server.js
     ```
-    The server will typically run on `http://localhost:3000`.
+    The server will typically run on `http://localhost:<PORT>` (e.g., `http://localhost:3000`).
 
 5.  **Nginx Configuration (for production deployment):**
     If you are using Nginx as a reverse proxy, ensure your Nginx configuration forwards API requests to your Node.js server (default port 3000).
@@ -47,7 +50,7 @@ This is a simple depositing system built with Node.js, Express, and MongoDB.
         }
 
         location /api/ {
-            proxy_pass http://localhost:3000;
+            proxy_pass http://localhost:3000; # Ensure this matches your server's PORT
             proxy_http_version 1.1;
             proxy_set_header Upgrade $http_upgrade;
             proxy_set_header Connection 'upgrade';
