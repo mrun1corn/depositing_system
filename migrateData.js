@@ -1,9 +1,11 @@
+require('dotenv').config();
+
 const { MongoClient } = require('mongodb');
 const fs = require('fs');
 const path = require('path');
 const bcrypt = require('bcryptjs');
 
-const mongoURI = "mongodb+srv://robin:robin01716@deposit.udyoebh.mongodb.net/?retryWrites=true&w=majority&appName=deposit";
+const mongoURI = process.env.MONGO_URI || "mongodb://localhost:27017/deposit_system";
 const client = new MongoClient(mongoURI);
 
 const usersDir = path.join(__dirname, 'data', 'users');
