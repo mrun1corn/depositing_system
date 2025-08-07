@@ -9,7 +9,7 @@ async function connectToMongo() {
     try {
         await client.connect();
         console.log("Connected to MongoDB!");
-        db = client.db(new URL(mongoURI).pathname.substring(1)); // Extract DB name from URI
+        db = client.db('deposit'); // Explicitly connect to the 'deposit' database
     } catch (e) {
         console.error("Could not connect to MongoDB", e);
         process.exit(1);

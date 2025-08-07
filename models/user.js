@@ -16,7 +16,13 @@ class User {
 
     static async findByUsername(username) {
         const db = getDb();
+        console.log(`Searching for user with username: '${username}'`);
         const user = await db.collection('users').findOne({ username: username });
+        if (user) {
+            console.log(`User found: ${user.username}`);
+        } else {
+            console.log(`User '${username}' not found in DB.`);
+        }
         return user;
     }
 
