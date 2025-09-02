@@ -2,6 +2,7 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const JWT_SECRET = process.env.JWT_SECRET || 'dev_jwt_secret';
 const User = require('../models/user');
 
 const router = express.Router();
@@ -34,7 +35,7 @@ router.post('/login', async (req, res) => {
         return res.status(400).send('Invalid username or password.');
     }
 
-    const token = jwt.sign({ _id: user._id, username: user.username, role: user.role }, 'your_jwt_secret');
+    const token = jwt.sign({ _id: user._id, username: user.username, role: user.role }, JWT_SECRET);
     res.send({ token });
 });
 

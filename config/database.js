@@ -1,4 +1,5 @@
 const { MongoClient } = require('mongodb');
+const { ensureIndexes } = require('./indexes');
 
 const mongoURI = process.env.MONGO_URI || "mongodb://localhost:27017/deposit_system"; // Fallback for local development
 const dbName = process.env.DB_NAME || "deposit_system"; // Use DB_NAME from .env or fallback
@@ -11,9 +12,15 @@ async function connectToMongo() {
         await client.connect();
         console.log("Connected to MongoDB!");
         db = client.db(dbName);
+        // Ensure required indexes are present
+        await ensureIndexes(db);
     } catch (e) {
         console.error("Could not connect to MongoDB", e);
-        process.exit(1);
+        if (process.env.NODE_ENV === 'test') {
+            throw e;
+        } else {
+            process.exit(1);
+        }
     }
 }
 

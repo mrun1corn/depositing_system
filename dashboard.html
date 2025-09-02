@@ -26,6 +26,16 @@
                 <!-- Dynamic navigation links will be inserted here by dashboard.js -->
             </div>
             <div class="navbar-nav ml-auto">
+                <div class="nav-item dropdown mr-2">
+                    <a class="nav-link" href="#" id="notifDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        <i class="fas fa-bell"></i>
+                        <span id="notif-count" class="badge badge-danger ml-1">0</span>
+                    </a>
+                    <div class="dropdown-menu dropdown-menu-right" aria-labelledby="notifDropdown" style="min-width: 320px;">
+                        <h6 class="dropdown-header">Notifications</h6>
+                        <div id="notif-list" style="max-height: 280px; overflow-y: auto;"></div>
+                    </div>
+                </div>
                 <button id="theme-toggle" class="btn btn-outline-light theme-toggle-button mr-2">
                     <i id="theme-toggle-dark-icon" class="fas fa-moon theme-icon"></i>
                     <i id="theme-toggle-light-icon" class="fas fa-sun theme-icon hidden"></i>
@@ -38,6 +48,7 @@
         <!-- Content will be dynamically loaded here -->
     </div>
     <script src="dashboard.js"></script>
+    <script src="/public/exportUtil.js"></script>
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
     <!-- Edit Payment Modal -->

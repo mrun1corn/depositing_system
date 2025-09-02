@@ -6,7 +6,7 @@ const socketManager = require('../socketManager');
 exports.getAllUsers = async (req, res) => {
     try {
         const users = await User.findAll();
-        res.json(users.map(user => ({ username: user.username, role: user.role })));
+        res.json(users.map(user => ({ _id: user._id, username: user.username, role: user.role })));
     } catch (error) {
         res.status(500).send('Error fetching users');
     }

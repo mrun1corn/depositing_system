@@ -23,16 +23,21 @@ app.use('/api', protectedRoutes);
 
 app.use(express.static(__dirname));
 app.use('/node_modules', express.static(path.join(__dirname, 'node_modules')));
+app.use('/exports', express.static(path.join(__dirname, 'exports')));
 
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-    console.log(`Server is running on http://localhost:${PORT}`);
-    console.log('Server started successfully.');
-    socketManager.init(server); // Initialize Socket.IO after server starts listening
-});
+if (process.env.NODE_ENV !== 'test') {
+    server.listen(PORT, () => {
+        console.log(`Server is running on http://localhost:${PORT}`);
+        console.log('Server started successfully.');
+        socketManager.init(server); // Initialize Socket.IO after server starts listening
+        // Initialize scheduled jobs (best-effort, non-blocking)
+        try { require('./utils/scheduler').init(); } catch (e) { console.warn('Scheduler init failed:', e.message); }
+    });
+}
 
 module.exports = { app, server };
