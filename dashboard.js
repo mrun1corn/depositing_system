@@ -33,8 +33,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const dashboardContent = document.getElementById('dashboard-content');
     const navLinksContainer = document.getElementById('nav-links');
 
-    const formatDate = (dateString) => {
-        const date = new Date(dateString);
+    const formatDate = (value) => {
+        if (!value) return '';
+        let date;
+        if (value instanceof Date) {
+            date = value;
+        } else if (typeof value === 'object' && value.$date) {
+            date = new Date(value.$date);
+        } else {
+            date = new Date(value);
+        }
+        if (isNaN(date.getTime())) return '';
         return date.toISOString().split('T')[0];
     };
 
