@@ -89,11 +89,18 @@ exports.createLoan = async (req, res) => {
 
         // Notifications
         try {
+            // Resolve borrower username for nicer messages
+            let borrowerName = borrowerUsername;
+            if (!borrowerName) {
+                const db = require('../config/database').getDb();
+                const u = await db.collection('users').findOne({ _id: new (require('mongodb').ObjectId)(borrowerId) });
+                borrowerName = u?.username || String(borrowerId);
+            }
             // Admin + Accountant role-wide
-            await Notification.create({ role: 'admin', userId: null, message: `Loan of ${Number(principalAmount).toFixed(2)} issued to borrower ${borrowerUsername || borrowerId}` });
-            await Notification.create({ role: 'accountant', userId: null, message: `Loan of ${Number(principalAmount).toFixed(2)} issued to borrower ${borrowerUsername || borrowerId}` });
+            await Notification.create({ role: 'admin', userId: null, message: `Loan of ${Number(principalAmount).toFixed(2)} issued to ${borrowerName} for "${purpose || 'N/A'}"` });
+            await Notification.create({ role: 'accountant', userId: null, message: `Loan of ${Number(principalAmount).toFixed(2)} issued to ${borrowerName} for "${purpose || 'N/A'}"` });
             // Borrower schedule ready
-            await Notification.create({ userId: borrowerId, role: 'user', message: `Your EMI schedule is ready for loan ${loan._id}` });
+            await Notification.create({ userId: borrowerId, role: 'user', message: `Your EMI schedule is ready for "${purpose || 'your loan'}"` });
         } catch (e) { /* best-effort */ }
 
         try { await logAudit({ actorId: req.user?._id, action: 'loan.create', resource: String(loan._id), before: null, after: loan, meta: { installments: schedule.length } }); } catch (_) {}
@@ -174,12 +181,15 @@ exports.repayInstallment = async (req, res) => {
         if (!remaining) {
             await LoanModel.setStatus(loanId, 'closed');
             try {
-                await Notification.create({ userId: loan.borrowerUserId, role: 'user', message: `Loan ${loanId} fully repaid. Congratulations!` });
+                const db = require('../config/database').getDb();
+                const u = await db.collection('users').findOne({ _id: new (require('mongodb').ObjectId)(loan.borrowerUserId) });
+                await Notification.create({ role: 'admin', userId: null, message: `Loan for ${u?.username || loan.borrowerUserId} fully repaid. Purpose: "${loan.purpose || 'N/A'}"` });
+                await Notification.create({ userId: loan.borrowerUserId, role: 'user', message: `Loan fully repaid. Purpose: "${loan.purpose || 'N/A'}"` });
             } catch (_) {}
         }
 
         try {
-            await Notification.create({ userId: loan.borrowerUserId, role: 'user', message: `EMI #${installment.periodNo} paid successfully` });
+            await Notification.create({ userId: loan.borrowerUserId, role: 'user', message: `EMI #${installment.periodNo} paid successfully for "${loan.purpose || 'your loan'}"` });
         } catch (_) {}
 
         try { await logAudit({ actorId: req.user?._id, action: 'loan.repay', resource: String(loanId), before: { periodNo: installment.periodNo }, after: { periodNo: installment.periodNo, paidAmount: installment.totalDue }, meta: {} }); } catch (_) {}
@@ -249,9 +259,12 @@ exports.repayEmiPayment = async (req, res) => {
         const updatedInst = updated.find(i => String(i._id) === String(installmentId));
         const loanAfter = await LoanModel.findById(id);
         try {
-            await Notification.create({ userId: loanAfter.borrowerUserId, role: 'user', message: `EMI #${updatedInst.periodNo} paid successfully` });
+            const db = require('../config/database').getDb();
+            const u = await db.collection('users').findOne({ _id: new (require('mongodb').ObjectId)(loanAfter.borrowerUserId) });
+            await Notification.create({ userId: loanAfter.borrowerUserId, role: 'user', message: `EMI #${updatedInst.periodNo} paid successfully for "${loanAfter.purpose || 'your loan'}"` });
             if (!(updated.some(i => i.status !== 'paid'))) {
-                await Notification.create({ userId: loanAfter.borrowerUserId, role: 'user', message: `Loan ${id} fully repaid. Congratulations!` });
+                await Notification.create({ role: 'admin', userId: null, message: `Loan for ${u?.username || loanAfter.borrowerUserId} fully repaid. Purpose: "${loanAfter.purpose || 'N/A'}"` });
+                await Notification.create({ userId: loanAfter.borrowerUserId, role: 'user', message: `Loan fully repaid. Purpose: "${loanAfter.purpose || 'N/A'}"` });
             }
         } catch (_) {}
         try { await logAudit({ actorId: req.user?._id, action: 'loan.repay.partial', resource: String(id), before: { installmentId }, after: { installmentId, paidAmount }, meta: {} }); } catch (_) {}

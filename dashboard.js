@@ -11,30 +11,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const socket = io();
 
     // Listen for payment events
-    socket.on('paymentAdded', (newPayment) => {
-        console.log('Payment added in real-time:', newPayment);
-        handleRouting();
-    });
+    socket.on('paymentAdded', () => { refreshNotifBell(); });
 
-    socket.on('paymentUpdated', (updatedPayment) => {
-        console.log('Payment updated in real-time:', updatedPayment);
-        handleRouting();
-    });
+    socket.on('paymentUpdated', () => { refreshNotifBell(); });
 
-    socket.on('paymentDeleted', (deletedPayment) => {
-        console.log('Payment deleted in real-time:', deletedPayment);
-        handleRouting();
-    });
+    socket.on('paymentDeleted', () => { refreshNotifBell(); });
 
     // Listen for notification events
-    socket.on('notificationAdded', (newNotification) => {
+    socket.on('notificationAdded', async (newNotification) => {
         console.log('Notification added in real-time:', newNotification);
-        handleRouting();
+        await refreshNotifBell();
     });
 
-    socket.on('notificationUpdated', (updatedNotification) => {
+    socket.on('notificationUpdated', async (updatedNotification) => {
         console.log('Notification updated in real-time:', updatedNotification);
-        handleRouting();
+        await refreshNotifBell();
     });
 
     document.getElementById('logged-in-username').textContent = `Logged in as: ${loggedInUser.username} (${loggedInUser.role})`;
@@ -220,10 +211,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // Notifications UI helpers
     async function refreshNotifBell() {
         const limit = 5;
-        const list = await fetchData(`notifications?status=unread&limit=${limit}`);
+        const listAll = await fetchData(`all-notifications`);
+        const list = Array.isArray(listAll) ? listAll.slice(-limit).reverse() : [];
         const countEl = document.getElementById('notif-count');
         const listEl = document.getElementById('notif-list');
-        const unreadCount = Array.isArray(list) ? list.length : 0;
+        const unreadCount = Array.isArray(listAll) ? listAll.filter(n => (n.status || 'unread') !== 'read').length : 0;
         if (countEl) countEl.textContent = unreadCount;
         if (listEl) {
             listEl.innerHTML = '';
@@ -269,7 +261,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const result = await deleteData(`payments/${id}`);
                     if (result !== 'Access Denied') {
                         alert('Payment deleted successfully!');
-                        handleRouting();
+                        await refreshNotifBell();
                     }
                 }
             });
@@ -287,7 +279,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (result !== 'Access Denied') {
                 alert('Payment updated successfully!');
                 $('#editPaymentModal').modal('hide');
-                handleRouting();
+                await refreshNotifBell();
             }
         });
     };
@@ -1498,19 +1490,41 @@ document.addEventListener('DOMContentLoaded', () => {
         // Initialize EMI availability on load
         await populateLoanSelect();
 
+        let isSubmittingPayment = false;
+        const showToast = (msg, kind='success') => {
+            let cont = document.getElementById('toast-container');
+            if (!cont) {
+                cont = document.createElement('div');
+                cont.id = 'toast-container';
+                cont.style.position = 'fixed';
+                cont.style.top = '20px';
+                cont.style.right = '20px';
+                cont.style.zIndex = 2000;
+                document.body.appendChild(cont);
+            }
+            const el = document.createElement('div');
+            el.className = `alert alert-${kind}`;
+            el.textContent = msg;
+            cont.appendChild(el);
+            setTimeout(() => { el.remove(); }, 2000);
+        };
+
         document.getElementById('payment-form').addEventListener('submit', async (e) => {
             e.preventDefault();
+            if (isSubmittingPayment) return;
+            isSubmittingPayment = true;
             const mode = getSelectedPaymentType();
             const username = userSelect.value;
             if (mode === 'deposit') {
                 const amount = document.getElementById('amount').value;
                 const paymentDate = document.getElementById('payment-date').value;
                 const paymentMethod = document.getElementById('payment-method').value;
-                const result = await postData('payments', { username, amount, paymentDate, paymentMethod });
+                const notes = (document.getElementById('deposit-notes')||{}).value;
+                const result = await postData('payments', { username, amount, paymentDate, paymentMethod, notes });
                 if (result !== 'Access Denied') {
-                    alert('Payment added!');
+                    showToast('Payment added!', 'success');
                     e.target.reset();
-                    handleRouting();
+                    await refreshNotifBell();
                 }
             } else {
                 const loanId = emiLoanSelect.value;
@@ -1521,14 +1535,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 const notes = emiNotesInput.value;
                 if (!loanId || !installmentId || !paidAmount) {
                     alert('Please select loan, installment, and amount.');
-                    return;
+                    isSubmittingPayment = false; return;
                 }
                 const result = await postJson(`loans/${loanId}/emi-payment`, { installmentId, paidAmount: Number(paidAmount), paidDate, method, notes });
                 if (result) {
-                    alert('EMI payment recorded successfully.');
-                    handleRouting();
+                    showToast('EMI payment recorded successfully.', 'success');
+                    await refreshNotifBell();
                 }
             }
+                    isSubmittingPayment = false;
         });
 
         document.getElementById('notification-form').addEventListener('submit', async (e) => {
@@ -1867,7 +1882,11 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     window.addEventListener('hashchange', handleRouting);
+
+    // Initial route render
     handleRouting();
+    // Initial bell render
+    (async () => { await refreshNotifBell(); })();
 
     document.getElementById('logout-button').addEventListener('click', () => {
         localStorage.removeItem('token');
