@@ -125,10 +125,6 @@ body.dark-mode .form-card {
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
-.form-group label {
-    color: #f8f9fa;
-}
-
 /* Table styling */
 .table-container {
     background-color: #fff;
@@ -162,11 +158,10 @@ body.dark-mode .data-table td {
     color: #f8f9fa; /* Adjusted for dark mode readability */
 }
 
-.data-table th {
-    background-color: #f2f2f2;
-    color: #555;
-    font-weight: bold;
-    text-transform: uppercase;
+/* General rule for any table inside a card in dark mode to override Bootstrap defaults */
+body.dark-mode .card .table th,
+body.dark-mode .card .table td {
+    color: #f8f9fa; /* Ensure all table text is light in dark mode */
 }
 
 body.dark-mode .data-table th {
@@ -179,7 +174,21 @@ body.dark-mode .data-table th {
 }
 
 body.dark-mode .data-table tbody tr:hover {
-    background-color: #666;
+    background-color: #5a5a5a;
+}
+
+/* Modal Content Dark Mode */
+body.dark-mode .modal-content {
+    background-color: #343a40;
+    color: #f8f9fa;
+}
+
+body.dark-mode .modal-header {
+    border-bottom: 1px solid #555;
+}
+
+body.dark-mode .modal-footer {
+    border-top: 1px solid #555;
 }
 
 /* Grid container */
