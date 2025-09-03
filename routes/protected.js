@@ -32,6 +32,7 @@ router.patch('/notifications/:id', authenticate, authorize(['admin', 'accountant
 // User routes
 router.get('/users', authenticate, authorize(['admin', 'accountant']), userController.getAllUsers);
 router.get('/users/:username', authenticate, userController.getUserByUsername);
+router.get('/users/:username/deductions', authenticate, userController.getUserDeductions);
 router.post('/users', authenticate, authorize(['admin']), userController.createUser);
 router.delete('/users/:username', authenticate, authorize(['admin']), userController.deleteUser);
 

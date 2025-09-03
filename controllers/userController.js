@@ -84,3 +84,38 @@ exports.deleteUser = async (req, res) => {
         res.status(500).send('Error deleting user');
     }
 };
+
+// GET /api/users/:username/deductions
+// Returns negative transactions (deductions) for a user such as loan issue split debits or negative adjustments
+exports.getUserDeductions = async (req, res) => {
+    try {
+        const username = req.params.username;
+        const caller = req.user;
+        if (caller.role === 'user' && caller.username !== username) {
+            return res.status(403).send('Access denied');
+        }
+        const { getDb } = require('../config/database');
+        const { ObjectId } = require('mongodb');
+        const db = getDb();
+        const userDoc = await db.collection('users').findOne({ username });
+        if (!userDoc) return res.status(404).send('User not found');
+        const rows = await db.collection('transactions')
+            .find({ userId: new ObjectId(userDoc._id), amount: { $lt: 0 } })
+            .sort({ createdAt: -1 })
+            .limit(500)
+            .toArray();
+        // Project minimal fields
+        const mapped = rows.map(r => ({
+            _id: r._id,
+            txnType: r.txnType,
+            amount: r.amount,
+            loanId: r.loanId || null,
+            reason: r.meta?.reason || null,
+            createdAt: r.createdAt || null,
+        }));
+        res.json(mapped);
+    } catch (e) {
+        console.error('getUserDeductions error', e);
+        res.status(500).send('Error fetching deductions');
+    }
+};

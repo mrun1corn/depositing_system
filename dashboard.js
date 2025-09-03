@@ -219,15 +219,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Notifications UI helpers
     async function refreshNotifBell() {
-        const limit = 5;
         const listAll = await fetchData(`all-notifications`);
-        const list = Array.isArray(listAll) ? listAll.slice(-limit).reverse() : [];
+        const list = Array.isArray(listAll) ? listAll.slice().reverse() : [];
         const countEl = document.getElementById('notif-count');
         const listEl = document.getElementById('notif-list');
         const unreadCount = Array.isArray(listAll) ? listAll.filter(n => (n.status || 'unread') !== 'read').length : 0;
         if (countEl) countEl.textContent = unreadCount;
         if (listEl) {
             listEl.innerHTML = '';
+            const actions = document.createElement('div');
+            actions.className = 'dropdown-item-text text-right';
+            const btn = document.createElement('button');
+            btn.className = 'btn btn-link btn-sm';
+            btn.type = 'button';
+            btn.textContent = 'Mark all as read';
+            btn.addEventListener('click', async () => { await markAllNotificationsAsRead(listAll); await refreshNotifBell(); });
+            actions.appendChild(btn);
+            listEl.appendChild(actions);
+
             (list || []).forEach(n => {
                 const div = document.createElement('div');
                 div.className = 'dropdown-item-text';
@@ -235,13 +244,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 div.innerHTML = `<small class="text-muted mr-2">${dateStr}</small>${n.message}`;
                 listEl.appendChild(div);
             });
-            if (!unreadCount) {
+            if (!list.length) {
                 const empty = document.createElement('div');
                 empty.className = 'dropdown-item-text text-muted';
-                empty.textContent = 'No unread notifications';
+                empty.textContent = 'No notifications';
                 listEl.appendChild(empty);
             }
         }
+    }
+
+    async function markAllNotificationsAsRead(listAll) {
+        try {
+            const items = Array.isArray(listAll) ? listAll : await fetchData('all-notifications');
+            const unread = (items || []).filter(n => (n.status || 'unread') !== 'read');
+            await Promise.all(unread.map(n => fetch(`/api/notifications/${n._id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ status: 'read' })
+            }).catch(() => null)));
+        } catch (e) { console.warn('markAllNotificationsAsRead failed', e); }
     }
 
     const setupPaymentEventListeners = () => {
@@ -717,7 +738,7 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         `;
         const notificationList = document.getElementById('notification-list');
-        notifications.slice(-5).reverse().forEach(notification => {
+        notifications.slice(-3).reverse().forEach(notification => {
             const notificationElement = document.createElement('div');
             notificationElement.className = 'notification-item';
             notificationElement.innerHTML = `
@@ -813,10 +834,48 @@ document.addEventListener('DOMContentLoaded', () => {
         const userPayments = allPayments.filter(p => p.username === username);
         let total = 0;
         userPayments.forEach(p => total += parseFloat(p.amount));
+        // Fetch deductions and loan info for this user
+        let deductions = [];
+        try { deductions = await fetchData(`users/${encodeURIComponent(username)}/deductions`); } catch(_) {}
+        let userDoc = null;
+        try { userDoc = await fetchData(`users/${encodeURIComponent(username)}`); } catch(_) {}
+        const userId = userDoc?._id;
+        let loans = [];
+        if (userId) {
+            try { loans = await fetchData(`loans?borrowerUserId=${encodeURIComponent(userId)}`); } catch(_) {}
+        }
 
         dashboardContent.innerHTML = `
             <h2 class="section-title mb-4">Payment History for ${username}</h2>
             <button id="back-to-admin-dashboard" class="btn btn-secondary mb-3"><i class="fas fa-arrow-left mr-2"></i>Back to Dashboard</button>
+            ${Array.isArray(deductions) && deductions.length ? `
+            <div class="card shadow mb-4">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0"><i class="fas fa-minus-circle mr-2"></i>Money Deducted</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead><tr><th>Date</th><th>Amount</th><th>Type</th><th>Reason</th><th>Loan</th></tr></thead>
+                            <tbody id="user-deductions-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>` : ''}
+            ${Array.isArray(loans) && loans.length ? `
+            <div class="card shadow mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-hand-holding-usd mr-2"></i>Loans Taken</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead><tr><th>Purpose</th><th>Principal</th><th>Status</th><th>Next EMI</th></tr></thead>
+                            <tbody id="user-loans-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>` : ''}
             <div class="card shadow mb-4">
                 <div class="card-header bg-primary text-white">
                     <h5 class="mb-0"><i class="fas fa-filter mr-2"></i>Filter Payments</h5>
@@ -874,6 +933,41 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             setupPaymentEventListeners();
         };
+
+        // Populate deductions if present
+        if (Array.isArray(deductions) && deductions.length) {
+            const tbody = document.getElementById('user-deductions-body');
+            if (tbody) {
+                deductions.forEach(d => {
+                    const tr = document.createElement('tr');
+                    const dateStr = d.createdAt ? new Date(d.createdAt).toISOString().split('T')[0] : '';
+                    tr.innerHTML = `<td>${dateStr}</td><td>${Number(d.amount||0).toFixed(2)}</td><td>${d.txnType||''}</td><td>${d.reason||''}</td><td>${d.loanId||''}</td>`;
+                    tbody.appendChild(tr);
+                });
+            }
+        }
+
+        // Populate loans and next EMI if any
+        if (Array.isArray(loans) && loans.length) {
+            const tbody = document.getElementById('user-loans-body');
+            if (tbody) {
+                for (const l of loans) {
+                    let nextStr = '-';
+                    try {
+                        const inst = await fetchData(`loans/${l._id}/installments`);
+                        const next = Array.isArray(inst) ? inst.find(i => i.status !== 'paid') : null;
+                        if (next) {
+                            nextStr = `#${next.periodNo} on ${formatDate(next.dueDate)}`;
+                        } else {
+                            nextStr = 'All paid';
+                        }
+                    } catch(_) {}
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `<td>${l.purpose||''}</td><td>${Number(l.principalAmount||0).toFixed(2)}</td><td>${l.status||''}</td><td>${nextStr}</td>`;
+                    tbody.appendChild(tr);
+                }
+            }
+        }
 
         renderPaymentsTable(userPayments);
 
@@ -1190,7 +1284,7 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         `;
         const notificationList = document.getElementById('notification-list');
-        notifications.slice(-5).reverse().forEach(notification => {
+        notifications.slice(-3).reverse().forEach(notification => {
             const notificationElement = document.createElement('div');
             notificationElement.className = 'notification-item';
             notificationElement.innerHTML = `
@@ -1895,6 +1989,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initial route render
     handleRouting();
     // Initial bell render
+    // Initial render only (do not auto-mark on load)
     (async () => { await refreshNotifBell(); })();
 
     document.getElementById('logout-button').addEventListener('click', () => {
@@ -1902,6 +1997,24 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.removeItem('loggedInUser');
         window.location.href = 'index.html';
     });
+
+    // Mark all as read when the notifications dropdown is opened
+    try {
+        if (window.$ && $('#notifDropdown').length) {
+            $('#notifDropdown').on('show.bs.dropdown', async () => {
+                await markAllNotificationsAsRead();
+                await refreshNotifBell();
+            });
+        } else {
+            const drop = document.getElementById('notifDropdown');
+            if (drop) {
+                drop.addEventListener('click', async () => {
+                    await markAllNotificationsAsRead();
+                    await refreshNotifBell();
+                });
+            }
+        }
+    } catch(_) {}
 
     // Initial notifications bell render and real-time updates
     refreshNotifBell();
