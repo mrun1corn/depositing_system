@@ -52,6 +52,176 @@
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
     <!-- Edit Payment Modal -->
+    <!-- Loans List Modal (moved from JS template) -->
+    <div class="modal fade" id="loansModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Loans List</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <form id="loans-filter" class="form-inline">
+                            <label class="mr-2">Status</label>
+                            <select id="loans-status" class="form-control form-control-sm mr-2">
+                                <option value="active,closed" selected>Active + Closed</option>
+                                <option value="active">Active</option>
+                                <option value="closed">Closed</option>
+                            </select>
+                            <label class="mr-2">From</label>
+                            <input id="loans-from" type="date" class="form-control form-control-sm mr-2" />
+                            <label class="mr-2">To</label>
+                            <input id="loans-to" type="date" class="form-control form-control-sm mr-2" />
+                            <button class="btn btn-primary btn-sm" type="submit">Apply</button>
+                        </form>
+                        <div>
+                            <button id="export-loans-xlsx" class="btn btn-success btn-sm mr-2">
+                                <i class="fas fa-file-excel mr-1"></i>Export XLSX
+                            </button>
+                            <button id="export-loans-csv" class="btn btn-outline-secondary btn-sm">
+                                <i class="fas fa-file-csv mr-1"></i>Export CSV
+                            </button>
+                            <button id="export-loans-server" class="btn btn-outline-primary btn-sm ml-2">
+                                <i class="fas fa-cloud-download-alt mr-1"></i>Server Export
+                            </button>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-striped" id="loans-list-table">
+                            <thead>
+                                <tr>
+                                    <th>Borrower</th>
+                                    <th>Purpose</th>
+                                    <th>Principal</th>
+                                    <th>Issued</th>
+                                    <th>Next EMI Due</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Balances Modal (moved from JS template) -->
+    <div class="modal fade" id="balancesModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Per-user Balances</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped" id="balances-table">
+                            <thead>
+                                <tr>
+                                    <th>User</th>
+                                    <th>Balance</th>
+                                    <th>Last Txn</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button id="export-balances-xlsx" class="btn btn-success">
+                        <i class="fas fa-file-excel mr-2"></i>Export
+                    </button>
+                    <!-- CSV button is created by JS to avoid duplication -->
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Total Amount – Breakdown Modal (moved from JS template) -->
+    <div class="modal fade" id="totalAmountModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Total Amount – Breakdown</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <ul class="nav nav-tabs" role="tablist">
+                        <li class="nav-item">
+                            <a class="nav-link active" data-toggle="tab" href="#tab-interest" role="tab">Per-User Interest Earned</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" data-toggle="tab" href="#tab-closures" role="tab">Loan Closure History</a>
+                        </li>
+                    </ul>
+                    <div class="tab-content pt-3">
+                        <div class="tab-pane fade show active" id="tab-interest" role="tabpanel">
+                            <div class="d-flex justify-content-end mb-2">
+                                <button id="export-interest-xlsx" class="btn btn-success btn-sm mr-2">
+                                    <i class="fas fa-file-excel mr-1"></i>Export XLSX
+                                </button>
+                                <button id="export-interest-csv" class="btn btn-outline-secondary btn-sm">
+                                    <i class="fas fa-file-csv mr-1"></i>Export CSV
+                                </button>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-striped" id="interest-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Loan</th>
+                                            <th>User</th>
+                                            <th>Interest Share</th>
+                                            <th>From</th>
+                                            <th>To</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="tab-pane fade" id="tab-closures" role="tabpanel">
+                            <div class="d-flex justify-content-end mb-2">
+                                <button id="export-closures-xlsx" class="btn btn-success btn-sm mr-2">
+                                    <i class="fas fa-file-excel mr-1"></i>Export XLSX
+                                </button>
+                                <button id="export-closures-csv" class="btn btn-outline-secondary btn-sm">
+                                    <i class="fas fa-file-csv mr-1"></i>Export CSV
+                                </button>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-striped" id="closures-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Loan</th>
+                                            <th>Borrower</th>
+                                            <th>Total Interest</th>
+                                            <th>Closed</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
     <div class="modal fade" id="editPaymentModal" tabindex="-1" aria-labelledby="editPaymentModalLabel" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -86,8 +256,7 @@
             </div>
         </div>
     </div>
-
-        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script src="/node_modules/socket.io-client/dist/socket.io.js"></script>
 </body>
 </html>

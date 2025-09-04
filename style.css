@@ -191,6 +191,49 @@ body.dark-mode .modal-footer {
     border-top: 1px solid #555;
 }
 
+/* Improve readability for tables and tabs inside modals in dark mode */
+body.dark-mode .modal-content .table th,
+body.dark-mode .modal-content .table td {
+    color: #f8f9fa;
+    border-color: #555;
+}
+
+body.dark-mode .modal-content .table thead th {
+    background-color: #495057;
+}
+
+body.dark-mode .modal-content .table-striped tbody tr:nth-of-type(odd) {
+    background-color: #3e444a;
+}
+
+body.dark-mode .modal-content .table-striped tbody tr:nth-of-type(even) {
+    background-color: #353b41;
+}
+
+body.dark-mode .modal-content .table tbody tr:hover {
+    background-color: #5a5f65;
+}
+
+/* Tabs styling in dark mode inside modals */
+body.dark-mode .modal-content .nav-tabs {
+    border-bottom-color: #555;
+}
+
+body.dark-mode .modal-content .nav-tabs .nav-link {
+    color: #cfd4da;
+}
+
+body.dark-mode .modal-content .nav-tabs .nav-link:hover {
+    color: #ffffff;
+}
+
+body.dark-mode .modal-content .nav-tabs .nav-link.active,
+body.dark-mode .modal-content .nav-tabs .nav-item.show .nav-link {
+    color: #ffffff;
+    background-color: #495057;
+    border-color: #555 #555 transparent;
+}
+
 /* Grid container */
 .grid-container {
     display: grid;
