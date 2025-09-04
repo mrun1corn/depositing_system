@@ -1,3 +1,9 @@
+import { renderNavBar as renderNavBarUI } from './modules/nav.js';
+import { showLoansModal as showLoansModalUI, showBalancesModal as showBalancesModalUI, showTotalAmountModal as showTotalAmountModalUI } from './modules/modals.js';
+import { api, notifications, formatDate as formatDateCore, calculatePaymentDetails as calculatePaymentDetailsCore } from './modules/core.js';
+import { setupRouter } from './modules/router.js';
+import { createViews } from './modules/views.js';
+
 document.addEventListener('DOMContentLoaded', () => {
     const token = localStorage.getItem('token');
     const loggedInUser = JSON.parse(localStorage.getItem('loggedInUser'));
@@ -6,6 +12,10 @@ document.addEventListener('DOMContentLoaded', () => {
         window.location.href = 'index.html';
         return;
     }
+
+    // Initialize core API with token
+    const apiInst = api(token);
+    const { fetchData, postData, postJson, putData, deleteData } = apiInst;
 
     // Initialize Socket.IO connection
     const socket = io();
@@ -33,192 +43,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const dashboardContent = document.getElementById('dashboard-content');
     const navLinksContainer = document.getElementById('nav-links');
 
-    const formatDate = (value) => {
-        if (!value) return '';
-        let date;
-        if (value instanceof Date) {
-            date = value;
-        } else if (typeof value === 'object' && value.$date) {
-            date = new Date(value.$date);
-        } else {
-            date = new Date(value);
-        }
-        if (isNaN(date.getTime())) return '';
-        return date.toISOString().split('T')[0];
-    };
+    // Use shared logic from core module
+    const formatDate = (value) => formatDateCore(value);
+    const calculatePaymentDetails = (username, allPayments) => calculatePaymentDetailsCore(username, allPayments);
 
-    const calculatePaymentDetails = (username, allPayments) => {
-        const userPayments = allPayments.filter(p => p.username === username);
-        let totalPayment = 0;
-        let lastMonthPayment = 0;
+    // API helpers ready from core
 
-        const now = new Date();
-        const currentMonth = now.getMonth();
-        const currentYear = now.getFullYear();
-
-        userPayments.forEach(p => {
-            const amount = parseFloat(p.amount);
-            totalPayment += amount;
-
-            const paymentDate = new Date(p.paymentDate);
-            if (paymentDate.getMonth() === currentMonth && paymentDate.getFullYear() === currentYear) {
-                lastMonthPayment += amount;
-            }
-        });
-
-        return { totalPayment: totalPayment.toFixed(2), lastMonthPayment: lastMonthPayment.toFixed(2) };
-    };
-
-    const fetchData = async (endpoint) => {
-        try {
-            const response = await fetch(`/api/${endpoint}`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                }
-            });
-            if (!response.ok) {
-                if (response.status === 403) {
-                    alert('Access Denied: You do not have permission to view this data.');
-                    return [];
-                }
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            return await response.json();
-        } catch (error) {
-            console.error(`Error fetching data from ${endpoint}:`, error);
-            return [];
-        }
-    };
-
-    const postData = async (endpoint, data) => {
-        try {
-            const response = await fetch(`/api/${endpoint}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`,
-                },
-                body: JSON.stringify(data)
-            });
-            if (!response.ok) {
-                if (response.status === 403) {
-                    alert('Access Denied: You do not have permission to perform this action.');
-                    return 'Access Denied';
-                }
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            return await response.text();
-        } catch (error) {
-            console.error(`Error posting data to ${endpoint}:`, error);
-        }
-    };
-
-    // JSON-post variant for endpoints that return JSON
-    const postJson = async (endpoint, data) => {
-        try {
-            const response = await fetch(`/api/${endpoint}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`,
-                },
-                body: JSON.stringify(data)
-            });
-            if (!response.ok) {
-                if (response.status === 403) {
-                    alert('Access Denied: You do not have permission to perform this action.');
-                    return null;
-                }
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            return await response.json();
-        } catch (error) {
-            console.error(`Error posting JSON to ${endpoint}:`, error);
-            return null;
-        }
-    };
-
-    const putData = async (endpoint, data) => {
-        try {
-            const response = await fetch(`/api/${endpoint}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`,
-                },
-                body: JSON.stringify(data)
-            });
-            if (!response.ok) {
-                if (response.status === 403) {
-                    alert('Access Denied: You do not have permission to perform this action.');
-                    return 'Access Denied';
-                }
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            return await response.text();
-        } catch (error) {
-            console.error(`Error putting data to ${endpoint}:`, error);
-        }
-    };
-
-    const deleteData = async (endpoint) => {
-        try {
-            const response = await fetch(`/api/${endpoint}`, {
-                method: 'DELETE',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                }
-            });
-            if (!response.ok) {
-                if (response.status === 403) {
-                    alert('Access Denied: You do not have permission to perform this action.');
-                    return 'Access Denied';
-                }
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            return await response.text();
-        } catch (error) {
-            console.error(`Error deleting data from ${endpoint}:`, error);
-        }
-    };
-
-    const renderNavBar = (activeTab) => {
-        navLinksContainer.innerHTML = '';
-        let links = [];
-
-        if (loggedInUser.role === 'admin') {
-            links = [
-                { name: 'Overview', id: 'admin-dashboard', icon: 'fas fa-chart-line', hash: '#admin-dashboard' },
-                { name: 'Members', id: 'admin-users', icon: 'fas fa-users', hash: '#admin-users' },
-                { name: 'Collections (In)', id: 'admin-deposit', icon: 'fas fa-money-check-alt', hash: '#admin-deposit' },
-                { name: 'Loans & EMIs', id: 'loans-emis', icon: 'fas fa-hand-holding-usd', hash: '#loans-emis' }
-            ];
-        } else if (loggedInUser.role === 'accountant') {
-            links = [
-                { name: 'Dashboard', id: 'accountant-dashboard', icon: 'fas fa-chart-line', hash: '#accountant-dashboard' },
-                { name: 'Record Collection (In)', id: 'accountant-deposit', icon: 'fas fa-money-check-alt', hash: '#accountant-deposit' },
-                { name: 'Loan Management', id: 'loans-emis', icon: 'fas fa-hand-holding-usd', hash: '#loans-emis' }
-            ];
-        } else if (loggedInUser.role === 'user') {
-            links = [
-                { name: 'My Balance', id: 'user-dashboard', icon: 'fas fa-chart-line', hash: '#user-dashboard' }
-            ];
-        }
-
-        links.forEach(link => {
-            const li = document.createElement('li');
-            li.className = 'nav-item';
-            const a = document.createElement('a');
-            a.href = link.hash;
-            a.className = `btn btn-outline-light mx-1 ${activeTab === link.id ? 'active' : ''}`;
-            a.innerHTML = `<i class="${link.icon} mr-2"></i>${link.name}`;
-            li.appendChild(a);
-            navLinksContainer.appendChild(li);
-        });
-    };
+    // Navbar is rendered via modules/nav.js (renderNavBarUI)
 
     // Notifications UI helpers
     async function refreshNotifBell() {
+        const { refreshNotifBell: coreRefresh } = notifications(token);
+        return coreRefresh();
         const listAll = await fetchData(`all-notifications`);
         const list = Array.isArray(listAll) ? listAll.slice().reverse() : [];
         const countEl = document.getElementById('notif-count');
@@ -254,6 +90,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function markAllNotificationsAsRead(listAll) {
+        const { markAllNotificationsAsRead: coreMark } = notifications(token);
+        return coreMark(listAll);
         try {
             const items = Array.isArray(listAll) ? listAll : await fetchData('all-notifications');
             const unread = (items || []).filter(n => (n.status || 'unread') !== 'read');
@@ -750,15 +588,15 @@ document.addEventListener('DOMContentLoaded', () => {
         // Click handlers: fetch details on demand
         document.getElementById('card-total-amount').addEventListener('click', async () => {
             const detail = await fetchData('dashboard/total-amount/detail');
-            showTotalAmountModal(detail);
+            showTotalAmountModalUI(detail);
         });
         document.getElementById('card-total-loan-issued').addEventListener('click', async () => {
             const rows = await fetchData('dashboard/loans/detail?status=active,closed');
-            showLoansModal(Array.isArray(rows) ? rows : []);
+            showLoansModalUI(Array.isArray(rows) ? rows : [], { token });
         });
         document.getElementById('card-remaining-balance').addEventListener('click', async () => {
             const rows = await fetchData('dashboard/balances/detail');
-            showBalancesModal(Array.isArray(rows) ? rows : []);
+            showBalancesModalUI(Array.isArray(rows) ? rows : []);
         });
 
         const allPaymentsListAdmin = document.getElementById('all-payments-list-admin');
@@ -826,7 +664,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         setupPaymentEventListeners();
-        renderNavBar('admin-dashboard');
+        renderNavBarUI(navLinksContainer, loggedInUser.role, 'admin-dashboard');
     };
 
     const renderUserPaymentDetails = async (username) => {
@@ -1164,7 +1002,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         cancelEditButton.addEventListener('click', resetForm);
-        renderNavBar('admin-users');
+        renderNavBarUI(navLinksContainer, loggedInUser.role, 'admin-users');
     };
 
     const renderAccountantDashboard = async () => {
@@ -1355,17 +1193,17 @@ document.addEventListener('DOMContentLoaded', () => {
         const acTotalAmount = document.getElementById('ac-card-total-amount');
         if (acTotalAmount) acTotalAmount.addEventListener('click', async () => {
             const detail = await fetchData('dashboard/total-amount/detail');
-            showTotalAmountModal(detail);
+            showTotalAmountModalUI(detail);
         });
         const acTotalIssued = document.getElementById('ac-card-total-loan-issued');
         if (acTotalIssued) acTotalIssued.addEventListener('click', async () => {
             const rows = await fetchData('dashboard/loans/detail?status=active,closed');
-            showLoansModal(Array.isArray(rows) ? rows : []);
+            showLoansModalUI(Array.isArray(rows) ? rows : [], { token });
         });
         const acRemainBal = document.getElementById('ac-card-remaining-balance');
         if (acRemainBal) acRemainBal.addEventListener('click', async () => {
             const rows = await fetchData('dashboard/balances/detail');
-            showBalancesModal(Array.isArray(rows) ? rows : []);
+            showBalancesModalUI(Array.isArray(rows) ? rows : []);
         });
 
         // Add deposit breakdown click
@@ -1381,7 +1219,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        renderNavBar('accountant-dashboard');
+        renderNavBarUI(navLinksContainer, loggedInUser.role, 'accountant-dashboard');
     };
 
     const renderAccountantDeposit = async () => {
@@ -1658,7 +1496,7 @@ document.addEventListener('DOMContentLoaded', () => {
             alert('Notification sent!');
             e.target.reset();
         });
-        renderNavBar('accountant-deposit');
+        renderNavBarUI(navLinksContainer, loggedInUser.role, 'accountant-deposit');
     };
 
     const renderUserDashboard = async () => {
@@ -1806,7 +1644,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 renderUserDashboard();
             }
         });
-        renderNavBar('user-dashboard');
+        renderNavBarUI(navLinksContainer, loggedInUser.role, 'user-dashboard');
     };
 
     // Loans & EMIs Page
@@ -1958,36 +1796,35 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    const handleRouting = () => {
-        const hash = window.location.hash;
-        if (hash.startsWith('#user-details/')) {
-            const username = hash.split('/')[1];
-            renderUserPaymentDetails(username);
-        } else if (hash === '#admin-users') {
-            renderAdminUsers();
-        } else if (hash === '#admin-deposit' || hash === '#accountant-deposit') {
-            renderAccountantDeposit();
-        } else if (hash === '#accountant-dashboard') {
-            renderAccountantDashboard();
-        } else if (hash === '#user-dashboard') {
-            renderUserDashboard();
-        } else if (hash === '#loans-emis') {
-            renderLoansEmisPage();
-        } else {
-            if (loggedInUser.role === 'admin') {
-                renderAdminDashboard();
-            } else if (loggedInUser.role === 'accountant') {
-                renderAccountantDashboard();
-            } else if (loggedInUser.role === 'user') {
-                renderUserDashboard();
-            }
-        }
-    };
-
-    window.addEventListener('hashchange', handleRouting);
-
-    // Initial route render
-    handleRouting();
+    // Build views facade and set up router
+    const views = createViews({
+        token,
+        loggedInUser,
+        fetchData,
+        postData,
+        postJson,
+        putData,
+        deleteData,
+        dashboardContent,
+        navLinksContainer,
+        formatDate: (v) => formatDateCore(v),
+        calculatePaymentDetails: (u, p) => calculatePaymentDetailsCore(u, p),
+        renderNavBarUI,
+        showTotalAmountModalUI,
+        showLoansModalUI,
+        showBalancesModalUI,
+        setupPaymentEventListeners,
+        refreshNotifBell,
+        // Pass through existing page renderers until fully migrated
+        renderAdminDashboard,
+        renderUserPaymentDetails,
+        renderAdminUsers,
+        renderAccountantDashboard,
+        renderAccountantDeposit,
+        renderUserDashboard,
+        renderLoansEmisPage,
+    });
+    setupRouter(loggedInUser, views);
     // Initial bell render
     // Initial render only (do not auto-mark on load)
     (async () => { await refreshNotifBell(); })();
