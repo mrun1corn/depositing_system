@@ -6,6 +6,7 @@ const { MongoClient } = require('mongodb');
 const bcrypt = require('bcryptjs');
 
 const mongoURI = process.env.MONGO_URI || "mongodb://localhost:27017/deposit_system";
+const dbName = process.env.DB_NAME || "deposit_system";
 const client = new MongoClient(mongoURI);
 
 async function manageUserPasswords() {
@@ -13,7 +14,7 @@ async function manageUserPasswords() {
         await client.connect();
         console.log("Connected to MongoDB.");
 
-        const db = client.db("deposit");
+        const db = client.db(dbName);
         const usersCollection = db.collection("users");
 
         // --- List all users ---

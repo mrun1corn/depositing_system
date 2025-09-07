@@ -1,8 +1,11 @@
 {
   "name": "deposit",
   "version": "1.0.0",
-  "main": "accountant.js",
+  "main": "server.js",
   "scripts": {
+    "start": "node server.js",
+    "migrate": "node migrateData.js",
+    "update-password": "node updatePassword.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

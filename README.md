@@ -21,7 +21,8 @@ This is a simple depositing system built with Node.js, Express, and MongoDB.
     ```
     MONGO_URI="mongodb+srv://<username>:<password>@<cluster-url>/<database-name>?retryWrites=true&w=majority&appName=<app-name>"
     PORT=3000
-    DB_NAME="your_db_name"
+    DB_NAME="deposit_system"
+    JWT_SECRET="replace_me_with_a_strong_secret"
     ```
 
     Replace `<username>`, `<password>`, `<cluster-url>`, `<database-name>`, and `<app-name>` with your MongoDB connection details.
@@ -32,9 +33,13 @@ This is a simple depositing system built with Node.js, Express, and MongoDB.
 
 4.  **Start the server:**
     ```bash
-    node server.js
+    npm start
     ```
     The server will typically run on `http://localhost:<PORT>` (e.g., `http://localhost:3000`).
+
+6.  **Utilities:**
+    - Migrate seed data (optional): `npm run migrate`
+    - List/update a password: `npm run update-password -- <username> <new_password>`
 
 5.  **Nginx Configuration (for production deployment):**
     If you are using Nginx as a reverse proxy, ensure your Nginx configuration forwards API requests to your Node.js server (default port 3000).

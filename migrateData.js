@@ -6,6 +6,7 @@ const path = require('path');
 const bcrypt = require('bcryptjs');
 
 const mongoURI = process.env.MONGO_URI || "mongodb://localhost:27017/deposit_system";
+const dbName = process.env.DB_NAME || "deposit_system";
 const client = new MongoClient(mongoURI);
 
 const usersDir = path.join(__dirname, 'data', 'users');
@@ -15,7 +16,7 @@ async function migrateData() {
         await client.connect();
         console.log("Connected to MongoDB for data migration.");
 
-        const db = client.db("deposit");
+        const db = client.db(dbName);
         const usersCollection = db.collection("users");
         const paymentsCollection = db.collection("payments");
         const notificationsCollection = db.collection("notifications");
@@ -25,6 +26,11 @@ async function migrateData() {
         await notificationsCollection.deleteMany({});
         console.log("Cleared existing data in MongoDB collections.");
 
+        if (!fs.existsSync(usersDir)) {
+            console.error(`Users directory not found: ${usersDir}`);
+            console.error("Skipping migration because no input data directory is present.");
+            return;
+        }
         const userFiles = fs.readdirSync(usersDir).filter(file => file.endsWith('.json'));
 
         for (const file of userFiles) {
